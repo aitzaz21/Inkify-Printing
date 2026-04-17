@@ -645,7 +645,7 @@ export default function ProfilePage() {
           </button>
         </motion.div>
       </div>
-    </div>
+   
 
     {/* Edit Profile Modal */}
     <AnimatePresence>
@@ -678,5 +678,6 @@ export default function ProfilePage() {
         }}
       />
     )}
+     </div>
   );
 }

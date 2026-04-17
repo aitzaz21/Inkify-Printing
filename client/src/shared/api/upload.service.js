@@ -1,4 +1,4 @@
-import api from '../../../shared/api/axios';
+import api from './axios';
 
 export const uploadAPI = {
   uploadDesign:  (file, onProgress) => {
