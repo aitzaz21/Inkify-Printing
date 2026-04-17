@@ -28,7 +28,7 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 const allowedOrigins = [
   "http://localhost:5173", // local dev
-  "https://your-frontend.vercel.app", // 🔥 replace with your real Vercel URL
+  "https://Inkify-Printing.vercel.app", // 🔥 replace with your real Vercel URL
 ];
 
 app.use(cors({
