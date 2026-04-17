@@ -1,0 +1,219 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply bg-ink-black text-white font-body antialiased;
+    background-color: #0B0B0B;
+  }
+
+  ::selection {
+    background-color: rgba(107, 66, 38, 0.4);
+    color: #fff;
+  }
+
+  ::-webkit-scrollbar       { width: 5px; }
+  ::-webkit-scrollbar-track { background: #0B0B0B; }
+  ::-webkit-scrollbar-thumb { background: #6B4226; border-radius: 10px; }
+}
+
+@layer components {
+
+  /* ── Glass card ── */
+  .glass-card {
+    @apply backdrop-blur-xl border border-ink-glass-border rounded-2xl;
+    background: rgba(11, 11, 11, 0.72);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .glass-card:hover {
+    box-shadow: 0 12px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  /* ── Inputs ── */
+  .glass-input {
+    @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30
+           focus:outline-none focus:border-ink-brown/60 focus:bg-white/[.08] transition-all duration-200 font-body text-sm;
+  }
+
+  /* ── Select / Dropdown fix (dark-theme) ── */
+  /*
+   * Native <option> elements are rendered by the OS and do NOT inherit
+   * CSS variables or Tailwind utility classes.  Without explicit colours
+   * they fall back to the system default (usually black-on-white or
+   * black-on-transparent), which is illegible on our dark canvas.
+   *
+   * The rules below force a consistent dark palette for every select on
+   * the site.  We target:
+   *   1. select           – the trigger element itself
+   *   2. select option    – every item in the native drop-down list
+   *   3. .glass-input     – overrides for selects that carry this class
+   *   4. :focus / :hover  – interaction states
+   */
+  select {
+    /* Solid dark background so the trigger always reads correctly */
+    background-color: #1c1410 !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    /* Show a custom caret that stays visible on the dark field */
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.45)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    padding-right: 2.5rem !important;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+  }
+
+  select:hover {
+    border-color: rgba(139, 90, 60, 0.5) !important;
+    background-color: #221a12 !important;
+  }
+
+  select:focus {
+    outline: none !important;
+    border-color: rgba(107, 66, 38, 0.7) !important;
+    background-color: #221a12 !important;
+    box-shadow: 0 0 0 3px rgba(107, 66, 38, 0.18) !important;
+  }
+
+  /*
+   * Option elements — rendered by the native OS picker.
+   * Setting background + color here is the only reliable cross-browser
+   * hook; Tailwind / custom properties won't reach them.
+   */
+  select option {
+    background-color: #1c1410;
+    color: #ffffff;
+    padding: 8px 12px;
+  }
+
+  select option:hover,
+  select option:focus {
+    background-color: #3a2010;
+    color: #ffffff;
+  }
+
+  select option:checked,
+  select option[selected] {
+    background-color: #6B4226;
+    color: #ffffff;
+    font-weight: 500;
+  }
+
+  select option:disabled {
+    color: rgba(255, 255, 255, 0.3);
+    background-color: #1c1410;
+  }
+
+  /* When glass-input is on a select, reinforce the same palette */
+  select.glass-input {
+    background-color: #1c1410 !important;
+    color: #ffffff !important;
+  }
+
+  select.glass-input:focus {
+    background-color: #221a12 !important;
+  }
+
+  /* ── Primary button ── */
+  .btn-primary {
+    @apply w-full py-3.5 px-6 rounded-xl font-body font-semibold text-sm tracking-wide
+           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ink-brown/50
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    background: linear-gradient(135deg, #6B4226, #8B5A3C);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(107,66,38,0.25);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #7d4f2d, #9a6648);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(107,66,38,0.45);
+  }
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 12px rgba(107,66,38,0.25);
+  }
+
+  /* ── Secondary button ── */
+  .btn-secondary {
+    @apply w-full py-3.5 px-6 rounded-xl font-body font-medium text-sm tracking-wide
+           border border-white/15 text-white/80 hover:text-white hover:border-white/30
+           transition-all duration-200 focus:outline-none bg-white/5 hover:bg-white/[.08];
+  }
+  .btn-secondary:hover { transform: translateY(-1px); }
+  .btn-secondary:active { transform: translateY(0); }
+
+  /* ── Google button ── */
+  .btn-google {
+    @apply w-full py-3.5 px-6 rounded-xl font-body font-medium text-sm tracking-wide
+           flex items-center justify-center gap-3
+           border border-white/15 text-white/80 hover:text-white hover:border-white/30
+           transition-all duration-200 focus:outline-none bg-white/5 hover:bg-white/[.08] cursor-pointer;
+  }
+
+  /* ── Labels ── */
+  .label { @apply block text-xs font-medium text-white/50 mb-1.5 tracking-wider uppercase; }
+  .error-text { @apply text-red-400/90 text-xs mt-1.5 flex items-center gap-1; }
+
+  /* ── Divider ── */
+  .section-divider { @apply flex items-center gap-3 my-6; }
+  .section-divider::before,
+  .section-divider::after { content: ''; @apply flex-1 h-px bg-white/10; }
+
+  /* ── Page transition wrapper ── */
+  .page-enter { animation: pageIn 0.35s ease forwards; }
+
+  /* ── Skeleton shimmer ── */
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s infinite;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(135deg, #FFFFFF 30%, #8B5A3C);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  }
+
+  /* Focus ring */
+  .focus-ring { @apply focus:outline-none focus:ring-2 focus:ring-ink-brown/40 focus:ring-offset-1 focus:ring-offset-transparent; }
+
+  /* Glow effect */
+  .glow-brown { box-shadow: 0 0 30px rgba(107,66,38,0.4); }
+}
+
+/* ── Keyframes ── */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Prose overrides for blog content ── */
+.prose-invert a           { color: #8B5A3C; }
+.prose-invert a:hover     { color: #C48A5C; }
+.prose-invert h1,
+.prose-invert h2,
+.prose-invert h3          { color: #fff; font-family: var(--font-display, serif); }
+.prose-invert blockquote  { border-left-color: rgba(107,66,38,0.5); color: rgba(255,255,255,0.6); }
+.prose-invert code        { background: rgba(107,66,38,0.15); color: #C48A5C; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
+.prose-invert pre         { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; }
