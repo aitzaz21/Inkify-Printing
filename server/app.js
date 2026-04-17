@@ -31,12 +31,16 @@ const allowedOrigins = [
   "https://inkify-printing.vercel.app/", // 🔥 replace with your real Vercel URL
 ];
 
+const cors = require("cors");
+
 app.use(cors({
   origin: function (origin, callback) {
-    // allow requests with no origin (Postman, mobile apps, etc.)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
+    if (
+      origin.includes("localhost") ||
+      origin.includes("vercel.app")
+    ) {
       return callback(null, true);
     } else {
       return callback(new Error("Not allowed by CORS"));
