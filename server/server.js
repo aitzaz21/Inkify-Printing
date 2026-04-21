@@ -1,7 +1,7 @@
 require('dotenv').config();
 const app       = require('./app');
 const connectDB = require('./config/db');
-const { seedProducts } = require('./modules/product/product.service');
+const { seedProducts, migrateProductPrices } = require('./modules/product/product.service');
 const User = require('./modules/user/user.model');
 const bcrypt = require('bcryptjs');
 
@@ -46,6 +46,7 @@ const seedAdmin = async () => {
 const startServer = async () => {
   await connectDB();
   await seedProducts();
+  await migrateProductPrices();
   await seedAdmin();
   app.listen(PORT, () => {
     console.log(`\n🚀 Inkify Printing Server running on port ${PORT}`);

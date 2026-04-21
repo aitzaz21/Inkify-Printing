@@ -121,7 +121,7 @@ export default function HomePage() {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={() => navigate(user ? '/designs' : '/signup')}
+              onClick={() => navigate(user ? '/customize' : '/signup')}
               className="flex items-center gap-3 px-8 py-4 rounded-xl text-sm font-medium text-white tracking-wide transition-all duration-200 hover:-translate-y-1"
               style={{ background: 'linear-gradient(135deg,#6B4226,#8B5A3C)', boxShadow: '0 4px 20px rgba(107,66,38,0.3)' }}
               onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 32px rgba(107,66,38,0.5)'}
@@ -293,7 +293,7 @@ export default function HomePage() {
               <p className="text-white/45 mb-8 max-w-md mx-auto text-sm">Create your free account and place your first order in minutes.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 {user ? (
-                  <button onClick={() => navigate('/designs')} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-sm font-medium text-white tracking-wide transition-all duration-200 hover:-translate-y-0.5" style={{ background: 'linear-gradient(135deg,#6B4226,#8B5A3C)' }}>Open Design Studio →</button>
+                  <button onClick={() => navigate('/customize')} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-sm font-medium text-white tracking-wide transition-all duration-200 hover:-translate-y-0.5" style={{ background: 'linear-gradient(135deg,#6B4226,#8B5A3C)' }}>Open Design Studio →</button>
                 ) : (
                   <>
                     <Link to="/signup" className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-sm font-medium text-white tracking-wide transition-all duration-200 hover:-translate-y-0.5" style={{ background: 'linear-gradient(135deg,#6B4226,#8B5A3C)' }}>Create Free Account</Link>

@@ -16,7 +16,8 @@ import AboutPage   from './modules/home/pages/AboutPage';
 import ContactPage from './modules/home/pages/ContactPage';
 
 // ── Shirt catalogue ────────────────────────────────────────────
-import DesignsPage from './modules/home/pages/DesignsPage';
+import DesignsPage       from './modules/home/pages/DesignsPage';
+import ProductDetailPage from './modules/products/pages/ProductDetailPage';
 
 // ── Marketplace ────────────────────────────────────────────────
 import MarketplacePage   from './modules/marketplace/pages/MarketplacePage';
@@ -114,7 +115,8 @@ function AppRoutes() {
     <Routes location={location} key={location.pathname}>
       {/* Public */}
       <Route path="/"        element={<PageLayout><HomePage /></PageLayout>} />
-      <Route path="/designs" element={<PageLayout><DesignsPage /></PageLayout>} />
+      <Route path="/designs"       element={<PageLayout><DesignsPage /></PageLayout>} />
+      <Route path="/products/:id"  element={<PageLayout><ProductDetailPage /></PageLayout>} />
       <Route path="/privacy" element={<PageLayout><PrivacyPage /></PageLayout>} />
       <Route path="/about"   element={<PageLayout><AboutPage /></PageLayout>} />
       <Route path="/contact" element={<PageLayout><ContactPage /></PageLayout>} />
