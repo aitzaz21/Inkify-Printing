@@ -132,7 +132,7 @@ const reverseOrder = async (orderId, reason) => {
     isReversed:     true,
     reversalReason: reason || 'Reversed by admin',
     reversedAt:     new Date(),
-    status:         'cancelled',
+    status:         'reversed',
   });
 
   // Reverse all pending designer earnings for this order

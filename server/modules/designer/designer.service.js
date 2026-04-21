@@ -285,6 +285,105 @@ const getTopSellingDesigns = async (limit = 10) => {
   ]);
 };
 
+// ── Admin: list all users who have designs ────────────────────
+const getDesignerList = async () => {
+  const Design = require('../design/design.model');
+
+  const designAgg = await Design.aggregate([
+    {
+      $group: {
+        _id:             '$creator',
+        totalDesigns:    { $sum: 1 },
+        approvedDesigns: { $sum: { $cond: [{ $eq: ['$status', 'approved'] }, 1, 0] } },
+        pendingDesigns:  { $sum: { $cond: [{ $eq: ['$status', 'pending']  }, 1, 0] } },
+        rejectedDesigns: { $sum: { $cond: [{ $eq: ['$status', 'rejected'] }, 1, 0] } },
+      },
+    },
+    { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'user' } },
+    { $unwind: '$user' },
+    { $sort: { approvedDesigns: -1, totalDesigns: -1 } },
+  ]);
+
+  const earningsAgg = await DesignerEarning.aggregate([
+    {
+      $group: {
+        _id:           '$designer',
+        totalEarned:   { $sum: '$amount' },
+        pendingAmount: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, '$amount', 0] } },
+        paidAmount:    { $sum: { $cond: [{ $eq: ['$status', 'paid']    }, '$amount', 0] } },
+        totalSales:    { $sum: 1 },
+      },
+    },
+  ]);
+  const earningsMap = {};
+  earningsAgg.forEach(e => { earningsMap[String(e._id)] = e; });
+
+  const wAgg = await WithdrawalRequest.aggregate([
+    { $match: { status: 'pending' } },
+    { $group: { _id: '$designer', count: { $sum: 1 }, amount: { $sum: '$amount' } } },
+  ]);
+  const wMap = {};
+  wAgg.forEach(w => { wMap[String(w._id)] = w; });
+
+  return designAgg.map(d => ({
+    _id: d._id,
+    user: {
+      _id:       d.user._id,
+      firstName: d.user.firstName,
+      lastName:  d.user.lastName,
+      email:     d.user.email,
+      avatar:    d.user.avatar,
+      createdAt: d.user.createdAt,
+    },
+    designs: {
+      total:    d.totalDesigns,
+      approved: d.approvedDesigns,
+      pending:  d.pendingDesigns,
+      rejected: d.rejectedDesigns,
+    },
+    earnings:    earningsMap[String(d._id)] || { totalEarned: 0, pendingAmount: 0, paidAmount: 0, totalSales: 0 },
+    withdrawals: wMap[String(d._id)]        || { count: 0, amount: 0 },
+  }));
+};
+
+// ── Admin: full profile for one designer ─────────────────────
+const getDesignerProfile = async (userId) => {
+  const Design = require('../design/design.model');
+  const User   = require('../user/user.model');
+
+  const [user, designs, earnings, withdrawals, summaryArr] = await Promise.all([
+    User.findById(userId).select('firstName lastName email avatar createdAt paymentAccounts'),
+    Design.find({ creator: userId }).sort({ createdAt: -1 }).select('title imageUrl status price usageCount createdAt'),
+    DesignerEarning.find({ designer: userId })
+      .populate('design', 'title imageUrl')
+      .populate('order', 'orderNumber createdAt isReversed')
+      .sort({ createdAt: -1 }).limit(50),
+    WithdrawalRequest.find({ designer: userId }).sort({ createdAt: -1 }).limit(30),
+    DesignerEarning.aggregate([
+      { $match: { designer: new mongoose.Types.ObjectId(userId) } },
+      { $group: {
+        _id:            null,
+        totalEarned:    { $sum: '$amount' },
+        pendingAmount:  { $sum: { $cond: [{ $eq: ['$status', 'pending']  }, '$amount', 0] } },
+        paidAmount:     { $sum: { $cond: [{ $eq: ['$status', 'paid']     }, '$amount', 0] } },
+        reversedAmount: { $sum: { $cond: [{ $eq: ['$status', 'reversed'] }, '$amount', 0] } },
+        totalSales:     { $sum: 1 },
+        reversedCount:  { $sum: { $cond: [{ $eq: ['$status', 'reversed'] }, 1, 0] } },
+      }},
+    ]),
+  ]);
+
+  if (!user) throw { status: 404, message: 'Designer not found.' };
+
+  return {
+    user,
+    designs,
+    earnings,
+    withdrawals,
+    summary: summaryArr[0] || { totalEarned: 0, pendingAmount: 0, paidAmount: 0, reversedAmount: 0, totalSales: 0, reversedCount: 0 },
+  };
+};
+
 module.exports = {
   recordDesignSale,
   getMyEarnings,
@@ -296,4 +395,6 @@ module.exports = {
   getDesignerSummaries,
   markEarningsPaid,
   getTopSellingDesigns,
+  getDesignerList,
+  getDesignerProfile,
 };

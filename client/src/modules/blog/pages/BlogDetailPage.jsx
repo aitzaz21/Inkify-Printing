@@ -79,21 +79,35 @@ export default function BlogDetailPage() {
         </motion.div>
 
         {/* Content */}
-        <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2, duration:0.45 }}
-          className="prose prose-invert prose-sm sm:prose-base max-w-none"
-          style={{
-            color: 'rgba(255,255,255,0.72)',
-            lineHeight: '1.85',
-          }}>
-          {/* Render blog content — supports basic HTML or plain paragraphs */}
+        <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2, duration:0.45 }}>
           <div
-            dangerouslySetInnerHTML={{ __html: blog.content.replace(/\n\n+/g, '</p><p>').replace(/\n/g, '<br/>') }}
-            style={{
-              '--tw-prose-body': 'rgba(255,255,255,0.72)',
-              '--tw-prose-headings': '#fff',
-              '--tw-prose-links': '#8B5A3C',
+            className="rich-content"
+            dangerouslySetInnerHTML={{
+              __html: /<[a-z][\s\S]*>/i.test(blog.content)
+                ? blog.content
+                : blog.content.replace(/\n\n+/g, '</p><p>').replace(/\n/g, '<br/>')
             }}
           />
+          <style>{`
+            .rich-content { color:rgba(255,255,255,0.75); line-height:1.85; font-size:15px; }
+            .rich-content h1 { font-size:2rem;   font-weight:700; color:#fff; margin:1.25rem 0 0.6rem; line-height:1.25; }
+            .rich-content h2 { font-size:1.5rem;  font-weight:600; color:rgba(255,255,255,.92); margin:1.1rem 0 0.5rem; line-height:1.3; }
+            .rich-content h3 { font-size:1.2rem;  font-weight:600; color:rgba(255,255,255,.88); margin:0.9rem 0 0.4rem; }
+            .rich-content h4 { font-size:1rem;    font-weight:600; color:rgba(255,255,255,.85); margin:0.75rem 0 0.35rem; }
+            .rich-content p  { margin:0.75rem 0; }
+            .rich-content a  { color:#C48A5C; text-decoration:underline; transition:opacity .15s; }
+            .rich-content a:hover { opacity:.8; }
+            .rich-content blockquote { border-left:3px solid #8B5A3C; padding:0.6rem 0.75rem 0.6rem 1.25rem; margin:1rem 0; color:rgba(255,255,255,.55); font-style:italic; background:rgba(107,66,38,.07); border-radius:0 10px 10px 0; }
+            .rich-content ul { list-style:disc;    padding-left:1.75rem; margin:0.75rem 0; }
+            .rich-content ol { list-style:decimal; padding-left:1.75rem; margin:0.75rem 0; }
+            .rich-content li { margin:0.3rem 0; }
+            .rich-content img { max-width:100%; height:auto; border-radius:12px; margin:16px 0; display:block; }
+            .rich-content hr  { border:none; border-top:1px solid rgba(255,255,255,.1); margin:1.5rem 0; }
+            .rich-content pre { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); padding:1rem 1.25rem; border-radius:10px; font-family:monospace; font-size:13px; overflow-x:auto; margin:1rem 0; white-space:pre-wrap; }
+            .rich-content strong, .rich-content b { font-weight:700; color:rgba(255,255,255,.95); }
+            .rich-content em, .rich-content i { font-style:italic; }
+            .rich-content s { text-decoration:line-through; }
+          `}</style>
         </motion.div>
 
         {/* Bottom CTA */}

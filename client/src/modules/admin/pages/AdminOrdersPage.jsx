@@ -11,8 +11,9 @@ const STATUS_COLORS = {
   dispatched: { bg:'rgba(249,115,22,0.12)', color:'#f97316',  label:'Dispatched' },
   delivered:  { bg:'rgba(34,197,94,0.12)',  color:'#22c55e',  label:'Delivered'  },
   cancelled:  { bg:'rgba(239,68,68,0.12)',  color:'#ef4444',  label:'Cancelled'  },
+  reversed:   { bg:'rgba(239,68,68,0.15)',  color:'#f87171',  label:'Reversed'   },
 };
-const STATUSES = ['pending','confirmed','processing','dispatched','delivered','cancelled'];
+const STATUSES = ['pending','confirmed','processing','dispatched','delivered','cancelled','reversed'];
 
 /* ── Confirmation modal ── */
 const ConfirmModal = ({ orderId, orderNumber, nextStatus, onConfirm, onCancel }) => (
@@ -219,14 +220,19 @@ const OrderCard = ({ order, onStatusChange, onReverse }) => {
         <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-white/6">
           {/* Status selector */}
           <select
-            value={order.status}
+            value={order.isReversed ? 'reversed' : order.status}
             onChange={e => onStatusChange(order._id, order.orderNumber, e.target.value)}
-            className="flex-1 text-xs rounded-lg px-3 py-2 focus:outline-none cursor-pointer"
+            disabled={order.isReversed}
+            className="flex-1 text-xs rounded-lg px-3 py-2 focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
             style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.7)', minWidth:'130px' }}>
-            {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
+            {STATUSES.map(s => (
+              <option key={s} value={s} disabled={s === 'reversed' && order.isReversed}>
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </option>
+            ))}
           </select>
 
-          {/* Reverse Order */}
+          {/* Reverse Order button — only for non-reversed orders */}
           {!order.isReversed && (
             <button onClick={() => onReverse(order._id, order.orderNumber)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all"
@@ -322,9 +328,14 @@ export default function AdminOrdersPage() {
 
   useEffect(() => { load(filter); }, [filter]);
 
-  // Called when user picks new status from dropdown — shows confirmation first
+  // Called when user picks new status from dropdown
   const requestStatusChange = (orderId, orderNumber, nextStatus) => {
-    setConfirm({ orderId, orderNumber, nextStatus });
+    if (nextStatus === 'reversed') {
+      // Route to reversal modal (requires reason input)
+      setReversal({ orderId, orderNumber });
+    } else {
+      setConfirm({ orderId, orderNumber, nextStatus });
+    }
   };
 
   // Confirmed — execute update

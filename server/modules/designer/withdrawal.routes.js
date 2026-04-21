@@ -5,6 +5,7 @@ const admin   = require('../../middleware/adminMiddleware');
 const {
   getMyEarnings, requestWithdrawal,
   getWithdrawalRequests, approveWithdrawal, rejectWithdrawal,
+  getDesignerList, getDesignerProfile,
 } = require('./designer.service');
 
 const ok  = (res, data) => res.json({ success: true,  ...data });
@@ -34,6 +35,17 @@ router.patch('/requests/:id/approve', auth, admin, async (req, res) => {
 
 router.patch('/requests/:id/reject',  auth, admin, async (req, res) => {
   try { ok(res, { request: await rejectWithdrawal(req.params.id, req.user._id, req.body.adminNote) }); }
+  catch (e) { err(res, e); }
+});
+
+// ── Admin: designer management ───────────────────────────────
+router.get('/admin/designers',            auth, admin, async (req, res) => {
+  try { ok(res, { designers: await getDesignerList() }); }
+  catch (e) { err(res, e); }
+});
+
+router.get('/admin/designers/:userId',    auth, admin, async (req, res) => {
+  try { ok(res, await getDesignerProfile(req.params.userId)); }
   catch (e) { err(res, e); }
 });
 
