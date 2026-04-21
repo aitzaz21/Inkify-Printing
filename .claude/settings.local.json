@@ -3,7 +3,9 @@
     "allow": [
       "Bash(node --input-type=module --eval \"import\\('./src/modules/products/pages/ProductDetailPage.jsx'\\)\")",
       "Bash(npm install *)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(node -e ' *)",
+      "Bash(npm run *)"
     ]
   }
 }
