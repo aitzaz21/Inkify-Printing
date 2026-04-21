@@ -13,6 +13,7 @@ router.get('/my/:id',     auth, ctrl.getMyOrder);
 router.get('/stats',      auth, admin, ctrl.getAdminStats);
 router.get('/',           auth, admin, ctrl.getAllOrders);
 router.get('/:id',        auth, admin, ctrl.getOrderById);
-router.patch('/:id/status', auth, admin, ctrl.updateOrderStatus);
+router.patch('/:id/status',  auth, admin, ctrl.updateOrderStatus);
+router.patch('/:id/reverse', auth, admin, ctrl.reverseOrder);
 
 module.exports = router;

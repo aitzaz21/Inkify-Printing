@@ -51,7 +51,8 @@ import AdminUsersPage       from './modules/admin/pages/AdminUsersPage';
 import AdminPrivacyPage     from './modules/admin/pages/AdminPrivacyPage';
 import AdminAboutPage       from './modules/admin/pages/AdminAboutPage';
 import AdminContactPage     from './modules/admin/pages/AdminContactPage';
-import AdminEarningsPage    from './modules/admin/pages/AdminEarningsPage';
+import AdminEarningsPage     from './modules/admin/pages/AdminEarningsPage';
+import AdminWithdrawalsPage  from './modules/admin/pages/AdminWithdrawalsPage';
 import AdminShirtConfigPage from './modules/admin/pages/AdminShirtConfigPage';
 import AdminBlogPage        from './modules/admin/pages/AdminBlogPage';
 import AdminFAQPage         from './modules/admin/pages/AdminFAQPage';
@@ -162,6 +163,7 @@ function AppRoutes() {
       <Route path="/admin/about"        element={<AdminOnly><AdminLayout><AdminAboutPage /></AdminLayout></AdminOnly>} />
       <Route path="/admin/contact"      element={<AdminOnly><AdminLayout><AdminContactPage /></AdminLayout></AdminOnly>} />
       <Route path="/admin/earnings"     element={<AdminOnly><AdminLayout><AdminEarningsPage /></AdminLayout></AdminOnly>} />
+      <Route path="/admin/withdrawals"  element={<AdminOnly><AdminLayout><AdminWithdrawalsPage /></AdminLayout></AdminOnly>} />
       <Route path="/admin/shirt-config" element={<AdminOnly><AdminLayout><AdminShirtConfigPage /></AdminLayout></AdminOnly>} />
       <Route path="/admin/blog"         element={<AdminOnly><AdminLayout><AdminBlogPage /></AdminLayout></AdminOnly>} />
       <Route path="/admin/faq"          element={<AdminOnly><AdminLayout><AdminFAQPage /></AdminLayout></AdminOnly>} />

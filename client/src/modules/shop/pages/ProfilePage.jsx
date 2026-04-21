@@ -8,6 +8,7 @@ import { orderAPI } from '../../orders/services/order.service';
 import { reviewAPI } from '../../reviews/services/review.service';
 import ReviewFormModal from '../../reviews/components/ReviewFormModal';
 import { fmt } from '../../../shared/utils/currency';
+import DesignerEarningsSection from '../components/DesignerEarningsSection';
 
 const Section = ({ title, children }) => (
   <div className="glass-card p-6 sm:p-8">
@@ -613,6 +614,11 @@ export default function ProfilePage() {
             </Section>
           </motion.div>
         )}
+
+        {/* Designer Earnings Section */}
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.18 }}>
+          <DesignerEarningsSection paymentAccounts={accounts} />
+        </motion.div>
 
         {/* Quick links */}
         <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }}

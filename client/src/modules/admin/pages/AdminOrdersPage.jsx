@@ -99,7 +99,7 @@ const DesignPanel = ({ order, onClose }) => {
 };
 
 /* ── Order Card ── */
-const OrderCard = ({ order, onStatusChange }) => {
+const OrderCard = ({ order, onStatusChange, onReverse }) => {
   const [expanded, setExpanded] = useState(false);
   const sc = STATUS_COLORS[order.status] || STATUS_COLORS.pending;
   const hasDesign = order.items.some(i => i.designUrl);
@@ -121,8 +121,17 @@ const OrderCard = ({ order, onStatusChange }) => {
               <span className={`text-xs font-medium ${order.paymentStatus==='paid'?'text-emerald-400':'text-yellow-500/80'}`}>
                 {order.paymentStatus}
               </span>
+              {order.isReversed && (
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                  style={{ background:'rgba(239,68,68,0.12)', color:'#ef4444', border:'1px solid rgba(239,68,68,0.2)' }}>
+                  Reversed
+                </span>
+              )}
             </div>
             <p className="text-white/35 text-xs mt-0.5">{new Date(order.createdAt).toLocaleString()}</p>
+            {order.isReversed && order.reversalReason && (
+              <p className="text-red-400/60 text-xs mt-1">Reason: {order.reversalReason}</p>
+            )}
           </div>
           <div className="text-right flex-shrink-0">
             <p className="font-display font-bold text-white text-lg">PKR {Math.round(order.total).toLocaleString()}</p>
@@ -217,6 +226,18 @@ const OrderCard = ({ order, onStatusChange }) => {
             {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
           </select>
 
+          {/* Reverse Order */}
+          {!order.isReversed && (
+            <button onClick={() => onReverse(order._id, order.orderNumber)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all"
+              style={{ background:'rgba(239,68,68,0.08)', color:'rgba(239,68,68,0.7)', border:'1px solid rgba(239,68,68,0.15)' }}>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+              </svg>
+              Reverse
+            </button>
+          )}
+
           {/* Design view/download */}
           <button onClick={() => setShowDesign(true)} title={hasDesign ? 'View designs' : 'No designs'}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all"
@@ -238,6 +259,48 @@ const OrderCard = ({ order, onStatusChange }) => {
   );
 };
 
+/* ── Reversal Modal ── */
+const ReversalModal = ({ orderId, orderNumber, onConfirm, onCancel }) => {
+  const [reason, setReason] = useState('');
+  return (
+    <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background:'rgba(0,0,0,0.88)' }}>
+      <motion.div initial={{ scale:0.9, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.9, opacity:0 }}
+        className="glass-card p-6 max-w-sm w-full">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.2)' }}>
+            <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-white font-display text-base font-bold">Reverse Order</h3>
+            <p className="text-white/40 text-xs">{orderNumber} · This will cancel & refund</p>
+          </div>
+        </div>
+        <p className="text-white/50 text-xs mb-3 leading-relaxed">
+          This will mark the order as reversed, cancel pending designer earnings, and notify the customer. This action cannot be undone.
+        </p>
+        <div className="mb-4">
+          <label className="label">Reversal Reason (required)</label>
+          <textarea rows={2} className="glass-input resize-none" value={reason} onChange={e => setReason(e.target.value)}
+            placeholder="e.g. Customer requested refund, quality issue…" />
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="btn-secondary flex-1">Cancel</button>
+          <button onClick={() => onConfirm(reason)} disabled={!reason.trim()}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-40 transition-all"
+            style={{ background:'rgba(239,68,68,0.15)', color:'#ef4444', border:'1px solid rgba(239,68,68,0.25)' }}>
+            Reverse Order
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 /* ── Main page ── */
 export default function AdminOrdersPage() {
   const [orders,   setOrders]   = useState([]);
@@ -246,7 +309,8 @@ export default function AdminOrdersPage() {
   const [updating, setUpdating] = useState('');
 
   // Confirmation state
-  const [confirm, setConfirm] = useState(null); // { orderId, orderNumber, nextStatus }
+  const [confirm,  setConfirm]  = useState(null); // { orderId, orderNumber, nextStatus }
+  const [reversal, setReversal] = useState(null); // { orderId, orderNumber }
 
   const load = (status = '') => {
     setLoading(true);
@@ -280,6 +344,24 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const requestReversal = (orderId, orderNumber) => setReversal({ orderId, orderNumber });
+
+  const executeReversal = async (reason) => {
+    if (!reversal) return;
+    const { orderId } = reversal;
+    setReversal(null);
+    setUpdating(orderId);
+    try {
+      const res = await orderAPI.reverseOrder(orderId, { reason });
+      setOrders(prev => prev.map(o => o._id === orderId ? res.data.order : o));
+      toast.success('Order reversed. Designer earnings cancelled. Customer notified.');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Reversal failed.');
+    } finally {
+      setUpdating('');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <AnimatePresence>
@@ -290,6 +372,14 @@ export default function AdminOrdersPage() {
             nextStatus={confirm.nextStatus}
             onConfirm={executeStatusChange}
             onCancel={() => setConfirm(null)}
+          />
+        )}
+        {reversal && (
+          <ReversalModal
+            orderId={reversal.orderId}
+            orderNumber={reversal.orderNumber}
+            onConfirm={executeReversal}
+            onCancel={() => setReversal(null)}
           />
         )}
       </AnimatePresence>
@@ -324,6 +414,7 @@ export default function AdminOrdersPage() {
               key={order._id}
               order={order}
               onStatusChange={requestStatusChange}
+              onReverse={requestReversal}
             />
           ))}
         </div>

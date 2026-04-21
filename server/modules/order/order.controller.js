@@ -68,4 +68,14 @@ const getAdminStats = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, getMyOrders, getMyOrder, getAllOrders, getOrderById, updateOrderStatus, getAdminStats };
+const reverseOrder = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const order = await orderService.reverseOrder(req.params.id, reason);
+    respond(res, 200, { order });
+  } catch (err) {
+    respond(res, err.status || 500, { message: err.message });
+  }
+};
+
+module.exports = { createOrder, getMyOrders, getMyOrder, getAllOrders, getOrderById, updateOrderStatus, reverseOrder, getAdminStats };

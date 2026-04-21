@@ -8,5 +8,6 @@ export const orderAPI = {
   getAll:       (params = {})    => api.get('/orders', { params }),
   getById:      (id)             => api.get(`/orders/${id}`),
   updateStatus: (id, data)       => api.patch(`/orders/${id}/status`, data),
+  reverseOrder: (id, data)       => api.patch(`/orders/${id}/reverse`, data),
   getStats:     ()               => api.get('/orders/stats'),
 };

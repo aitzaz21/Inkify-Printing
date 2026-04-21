@@ -50,6 +50,9 @@ const orderSchema = new mongoose.Schema({
   confirmedAt:  { type: Date },
   dispatchedAt: { type: Date },
   deliveredAt:  { type: Date },
+  isReversed:     { type: Boolean, default: false },
+  reversalReason: { type: String, default: '' },
+  reversedAt:     { type: Date, default: null },
 }, { timestamps: true });
 
 orderSchema.pre('save', async function (next) {

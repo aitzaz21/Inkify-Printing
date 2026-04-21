@@ -214,12 +214,54 @@ const sendPaymentCompleteEmail = async (designerEmail, firstName, amount) => {
   });
 };
 
+const sendOrderReversalEmail = async (order, reason) => {
+  if (!order?.user?.email) return;
+  const { email, firstName } = order.user;
+  return sendEmail({
+    to: email,
+    subject: `Order ${order.orderNumber} has been reversed`,
+    html: shell(
+      h1('Order Reversed') +
+      statusBadge('Reversed', '#ef4444') +
+      '<br><br>' +
+      p(`Hi ${firstName}, your order <strong style="color:#8B5A3C">${order.orderNumber}</strong> has been reversed.`) +
+      (reason ? p(`<strong style="color:rgba(255,255,255,0.8)">Reason:</strong> ${reason}`) : '') +
+      p('If you paid online, a refund will be processed to your original payment method within 3-7 business days. For COD orders, no charge applies.') +
+      p('If you have questions, please reach out to our support team.')
+    ),
+  });
+};
+
+const sendWithdrawalStatusEmail = async (designerEmail, firstName, amount, status, adminNote) => {
+  const approved = status === 'approved';
+  return sendEmail({
+    to: designerEmail,
+    subject: approved
+      ? `Withdrawal of PKR ${Math.round(amount).toLocaleString()} Approved! 💸`
+      : `Withdrawal Request Update`,
+    html: shell(
+      h1(approved ? 'Withdrawal Approved! 💸' : 'Withdrawal Request Update') +
+      statusBadge(approved ? 'Approved' : 'Not Approved', approved ? '#22c55e' : '#ef4444') +
+      '<br><br>' +
+      (approved
+        ? p(`Hi ${firstName}, your withdrawal request of <strong style="color:#8B5A3C">PKR ${Math.round(amount).toLocaleString()}</strong> has been approved and payment has been sent to your registered account.`)
+        : p(`Hi ${firstName}, your withdrawal request of <strong style="color:#8B5A3C">PKR ${Math.round(amount).toLocaleString()}</strong> could not be processed at this time.`)
+      ) +
+      (adminNote ? p(`<strong style="color:rgba(255,255,255,0.8)">Note from admin:</strong> ${adminNote}`) : '') +
+      hr() +
+      p('Log in to your Inkify account to view your earnings dashboard.')
+    ),
+  });
+};
+
 module.exports = {
   sendEmail,
   sendVerificationOTP,
   sendPasswordResetOTP,
   sendOrderEmail,
+  sendOrderReversalEmail,
   sendDesignStatusEmail,
   sendDesignSoldEmail,
   sendPaymentCompleteEmail,
+  sendWithdrawalStatusEmail,
 };
