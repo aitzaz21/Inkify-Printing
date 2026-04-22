@@ -277,26 +277,26 @@ export default function AdminProductsPage() {
 
                   {/* Size premiums */}
                   <div>
-                    <p className="label mb-2">Size Premiums (optional)</p>
-                    <p className="text-white/25 text-xs mb-3">Leave blank for no extra charge. Amount is added to base price.</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      {form.sizes.map(size => {
-                        const hasPremium = ['XL', 'XXL'].includes(size) || sizePricingInForm[size] > 0;
-                        if (!hasPremium && !['XL', 'XXL'].includes(size)) return null;
-                        return (
-                          <div key={size} className="flex items-center gap-2">
-                            <span className="text-white/50 text-xs font-medium w-8 flex-shrink-0">{size}</span>
-                            <div className="relative flex-1">
-                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30 text-xs">+PKR</span>
-                              <input type="number" min="0" step="1" className="glass-input pl-12 py-1.5 text-sm"
-                                value={sizePricingInForm[size] || ''}
-                                onChange={e => setSizePremium(size, e.target.value)}
-                                placeholder="0" />
-                            </div>
+                    <p className="label mb-1">Per-Size Pricing (optional)</p>
+                    <p className="text-white/25 text-xs mb-3">Leave blank to use the base price. Enter an amount to override the price for that size.</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {form.sizes.map(size => (
+                        <div key={size} className="flex items-center gap-2 p-2 rounded-lg"
+                          style={{ background: sizePricingInForm[size] > 0 ? 'rgba(107,66,38,0.12)' : 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <span className="text-white/60 text-xs font-semibold w-8 flex-shrink-0">{size}</span>
+                          <div className="relative flex-1">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-white/30 text-[10px]">+PKR</span>
+                            <input type="number" min="0" step="1" className="glass-input pl-9 py-1.5 text-xs"
+                              value={sizePricingInForm[size] || ''}
+                              onChange={e => setSizePremium(size, e.target.value)}
+                              placeholder="0" />
                           </div>
-                        );
-                      })}
+                        </div>
+                      ))}
                     </div>
+                    <p className="text-white/20 text-[10px] mt-2">
+                      Customer pays: Base PKR {form.basePrice || 0} + size add-on (if any)
+                    </p>
                   </div>
                 </div>
 

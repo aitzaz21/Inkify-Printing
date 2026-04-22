@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { orderAPI } from '../../orders/services/order.service';
 import { Spinner } from '../../../shared/components/Spinner';
+import { ShirtOrderPreview3D } from '../components/ShirtOrderPreview3D';
 
 const STATUS_COLORS = {
   pending:    { bg:'rgba(234,179,8,0.12)',  color:'#ca8a04',  label:'Pending'    },
@@ -48,67 +49,26 @@ const ConfirmModal = ({ orderId, orderNumber, nextStatus, onConfirm, onCancel })
   </motion.div>
 );
 
-/* ── Design Preview panel ── */
-const DesignPanel = ({ order, onClose }) => {
-  const items = order.items.filter(i => i.designUrl);
-  return (
-    <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background:'rgba(0,0,0,0.85)' }} onClick={onClose}>
-      <motion.div initial={{ scale:0.9, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.9, opacity:0 }}
-        className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-white font-display font-bold">Designs — {order.orderNumber}</h3>
-          <button onClick={onClose} className="text-white/40 hover:text-white">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
-        </div>
-        {items.length === 0 ? (
-          <p className="text-white/30 text-sm text-center py-8">No design uploads for this order.</p>
-        ) : items.map((item, i) => (
-          <div key={i} className="rounded-xl overflow-hidden mb-4"
-            style={{ border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.03)' }}>
-            <div className="p-3 border-b border-white/6 flex justify-between items-start">
-              <div>
-                <p className="text-white text-sm font-medium">{item.productName || item.shirtType}</p>
-                <p className="text-white/40 text-xs">{item.color} / {item.size} × {item.quantity}</p>
-                {item.designNote && <p className="text-white/30 text-xs italic mt-0.5">"{item.designNote}"</p>}
-                {item.designId && (
-                  <p className="text-ink-brown text-xs mt-0.5">Marketplace design</p>
-                )}
-              </div>
-              <a href={item.designUrl}
-                download={`${order._id}-${order.user?._id || 'user'}-design${i+1}`}
-                target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium"
-                style={{ background:'rgba(107,66,38,0.2)', color:'#C48A5C', border:'1px solid rgba(107,66,38,0.3)' }}>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                </svg>
-                Download
-              </a>
-            </div>
-            <div className="p-3 flex justify-center" style={{ background:'rgba(0,0,0,0.2)' }}>
-              <img src={item.designUrl} alt="Design" className="max-h-44 object-contain rounded-lg" />
-            </div>
-          </div>
-        ))}
-      </motion.div>
-    </motion.div>
-  );
-};
 
 /* ── Order Card ── */
 const OrderCard = ({ order, onStatusChange, onReverse }) => {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded,     setExpanded]     = useState(false);
+  const [preview3dItem, setPreview3dItem] = useState(null); // item to show in 3D preview
   const sc = STATUS_COLORS[order.status] || STATUS_COLORS.pending;
-  const hasDesign = order.items.some(i => i.designUrl);
-  const [showDesign, setShowDesign] = useState(false);
+  const customItems = order.items.filter(i => i.shirtTypeId || i.designUrl);
+  const hasCustom = customItems.length > 0;
 
   return (
     <>
-      <AnimatePresence>{showDesign && <DesignPanel order={order} onClose={() => setShowDesign(false)} />}</AnimatePresence>
+      <AnimatePresence>
+        {preview3dItem && (
+          <ShirtOrderPreview3D
+            order={order}
+            item={preview3dItem}
+            onClose={() => setPreview3dItem(null)}
+          />
+        )}
+      </AnimatePresence>
 
       <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }}
         className="glass-card p-5 space-y-4">
@@ -244,21 +204,44 @@ const OrderCard = ({ order, onStatusChange, onReverse }) => {
             </button>
           )}
 
-          {/* Design view/download */}
-          <button onClick={() => setShowDesign(true)} title={hasDesign ? 'View designs' : 'No designs'}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all"
-            style={{
-              background: hasDesign ? 'rgba(107,66,38,0.18)' : 'rgba(255,255,255,0.04)',
-              color:      hasDesign ? '#C48A5C'               : 'rgba(255,255,255,0.2)',
-              border:     hasDesign ? '1px solid rgba(107,66,38,0.28)' : '1px solid rgba(255,255,255,0.06)',
-              cursor:     hasDesign ? 'pointer' : 'default',
-            }}>
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            {hasDesign ? 'Designs' : 'No Design'}
-          </button>
+          {/* 3D Preview — one button per custom item */}
+          {hasCustom ? (
+            customItems.length === 1 ? (
+              <button
+                onClick={() => setPreview3dItem(customItems[0])}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all"
+                style={{ background:'rgba(107,66,38,0.18)', color:'#C48A5C', border:'1px solid rgba(107,66,38,0.28)' }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                </svg>
+                3D Preview
+              </button>
+            ) : (
+              <div className="flex gap-1">
+                {customItems.map((item, i) => (
+                  <button key={i}
+                    onClick={() => setPreview3dItem(item)}
+                    className="flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-medium transition-all"
+                    style={{ background:'rgba(107,66,38,0.18)', color:'#C48A5C', border:'1px solid rgba(107,66,38,0.28)' }}
+                    title={`3D preview — ${item.productName || item.shirtType} ${item.size}`}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                    </svg>
+                    #{i + 1}
+                  </button>
+                ))}
+              </div>
+            )
+          ) : (
+            <span
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs"
+              style={{ background:'rgba(255,255,255,0.04)', color:'rgba(255,255,255,0.2)', border:'1px solid rgba(255,255,255,0.06)' }}
+            >
+              No Custom Design
+            </span>
+          )}
         </div>
       </motion.div>
     </>

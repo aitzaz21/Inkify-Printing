@@ -21,7 +21,6 @@ export function ShirtViewer3D({
   designScale,
   designRot,
   orbitRef,
-  autoRotate = true,
   showPrintArea = false,
 }) {
   return (
@@ -77,8 +76,7 @@ export function ShirtViewer3D({
         maxDistance={6}
         minPolarAngle={Math.PI * 0.2}
         maxPolarAngle={Math.PI * 0.78}
-        autoRotate={autoRotate}
-        autoRotateSpeed={0.5}
+        autoRotate={false}
         makeDefault
       />
     </Canvas>

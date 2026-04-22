@@ -1,6 +1,6 @@
 import { useRef, useMemo, useEffect, useState } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
 import { createShirtGeometry, CHEST_BOUNDS_3D } from '../utils/shirtShapes';
 
@@ -35,6 +35,7 @@ export function ShirtMesh3D({
   const [designTex, setDesignTex] = useState(null);
   const [targetOpacity, setTargetOpacity] = useState(1);
   const opacityRef = useRef(1);
+  const { invalidate } = useThree();
 
   const geometry = useMemo(() => createShirtGeometry(typeId), [typeId]);
   useEffect(() => () => geometry?.dispose(), [geometry]);
@@ -45,7 +46,10 @@ export function ShirtMesh3D({
     side: THREE.FrontSide,
   }), []);
 
-  useEffect(() => { shirtMaterial.color.set(color); }, [color, shirtMaterial]);
+  useEffect(() => {
+    shirtMaterial.color.set(color);
+    invalidate();
+  }, [color, shirtMaterial, invalidate]);
   useEffect(() => () => shirtMaterial?.dispose(), [shirtMaterial]);
 
   useEffect(() => {
@@ -54,11 +58,11 @@ export function ShirtMesh3D({
     loader.crossOrigin = 'anonymous';
     loader.load(
       designImage,
-      (tex) => { tex.colorSpace = THREE.SRGBColorSpace; setDesignTex(tex); },
+      (tex) => { tex.colorSpace = THREE.SRGBColorSpace; setDesignTex(tex); invalidate(); },
       undefined,
       () => setDesignTex(null),
     );
-  }, [designImage]);
+  }, [designImage, invalidate]);
 
   useEffect(() => () => designTex?.dispose(), [designTex]);
 

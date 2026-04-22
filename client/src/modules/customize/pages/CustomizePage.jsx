@@ -161,9 +161,6 @@ export default function CustomizePage() {
   const [dScale, setDScale] = useState(1.0);
   const [dRot,   setDRot]   = useState(0);
 
-  // 3D viewer state
-  const [viewerHovered, setViewerHovered] = useState(false);
-
   // Size guide modal
   const [showSizeGuide, setShowSizeGuide] = useState(false);
 
@@ -356,8 +353,6 @@ export default function CustomizePage() {
                 border:      '1px solid rgba(255,255,255,0.08)',
                 aspectRatio: '1',
               }}
-              onMouseEnter={() => setViewerHovered(true)}
-              onMouseLeave={() => setViewerHovered(false)}
             >
               <Suspense fallback={
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3"
@@ -375,7 +370,6 @@ export default function CustomizePage() {
                   designScale={dScale}
                   designRot={dRot}
                   orbitRef={orbitRef}
-                  autoRotate={!viewerHovered && step !== 2}
                   showPrintArea={step === 2 && !activeDesignImg}
                 />
               </Suspense>
@@ -401,7 +395,7 @@ export default function CustomizePage() {
                   padding:       '4px 14px',
                 }}>
                 {activeDesignImg ? (
-                  <p className="text-white/45 text-xs">Drag design · Scroll to zoom · Rotate to inspect</p>
+                  <p className="text-white/45 text-xs">Drag handle to position · Scroll to zoom · Drag to rotate</p>
                 ) : step === 2 ? (
                   <p className="text-[#8B5A3C] text-xs">Print area shown — add a design to place it</p>
                 ) : (
@@ -622,78 +616,110 @@ export default function CustomizePage() {
                       {/* Upload tab */}
                       {designTab === 'upload' && (
                         <motion.div key="upload"
-                          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                          <label
-                            className="block cursor-pointer"
-                            onDrop={handleDrop}
-                            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-                            onDragLeave={() => setDragOver(false)}
-                          >
-                            <input type="file" accept="image/jpeg,image/png,image/webp"
-                              onChange={handleFileChange} className="hidden" />
-                            <div
-                              className="relative w-full rounded-2xl overflow-hidden transition-all duration-200"
-                              style={{
-                                paddingBottom: '55%',
-                                border: dragOver
-                                  ? '2px dashed rgba(139,90,60,0.8)'
-                                  : '2px dashed rgba(107,66,38,0.35)',
-                                background: dragOver
-                                  ? 'rgba(107,66,38,0.1)'
-                                  : 'rgba(107,66,38,0.04)',
-                              }}
-                            >
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                {uploading ? (
-                                  <div className="flex flex-col items-center gap-3 px-6 w-full">
-                                    <Spinner size="md" className="text-ink-brown" />
-                                    <div className="w-full max-w-xs">
-                                      <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                                        <motion.div
-                                          className="h-full rounded-full"
-                                          style={{ background: 'linear-gradient(90deg,#6B4226,#8B5A3C)' }}
-                                          animate={{ width: `${uploadPct}%` }}
-                                          transition={{ duration: 0.2 }}
-                                        />
-                                      </div>
-                                      <p className="text-white/35 text-xs text-center mt-1.5">{uploadPct}% uploaded</p>
-                                    </div>
-                                  </div>
-                                ) : (localPreview || designUrl) ? (
-                                  <div className="flex flex-col items-center gap-2 p-4">
-                                    <div className="relative">
-                                      <img src={localPreview || designUrl} alt="Design preview"
-                                        className="max-h-28 object-contain rounded-xl shadow-lg" />
-                                      <div className="absolute inset-0 rounded-xl ring-2 ring-[#8B5A3C]/40" />
-                                    </div>
-                                    <p className="text-white/40 text-xs">Click to replace</p>
-                                  </div>
-                                ) : (
-                                  <div className="flex flex-col items-center gap-4 p-6 text-center">
-                                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                                      style={{ background: 'rgba(107,66,38,0.15)', border: '1px solid rgba(107,66,38,0.3)' }}>
-                                      <svg className="w-7 h-7 text-[#8B5A3C]" fill="none" stroke="currentColor"
-                                        strokeWidth="1.5" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round"
-                                          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                                      </svg>
-                                    </div>
-                                    <div>
-                                      <p className="text-white/70 text-sm font-semibold">
-                                        {dragOver ? 'Drop your file here' : 'Click or drag to upload'}
-                                      </p>
-                                      <p className="text-white/30 text-xs mt-1">JPG, PNG, WEBP · Max 5 MB</p>
-                                    </div>
-                                  </div>
-                                )}
+                          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                          className="space-y-3">
+
+                          {/* Uploaded design preview */}
+                          {(localPreview || designUrl) && !uploading && (
+                            <div className="flex items-center gap-4 p-4 rounded-2xl"
+                              style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.18)' }}>
+                              <div className="relative flex-shrink-0">
+                                <img
+                                  src={localPreview || designUrl}
+                                  alt="Design preview"
+                                  className="w-20 h-20 object-contain rounded-xl"
+                                  style={{ background: 'rgba(255,255,255,0.06)' }}
+                                />
+                                <div className="absolute inset-0 rounded-xl ring-1 ring-[#8B5A3C]/40" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <svg className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                  </svg>
+                                  <p className="text-emerald-400 text-xs font-semibold">Design ready</p>
+                                </div>
+                                <p className="text-white/50 text-xs">Visible on shirt in the 3D viewer</p>
+                                <p className="text-white/30 text-xs mt-0.5">Use sliders below to adjust placement</p>
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                <label className="cursor-pointer">
+                                  <input type="file" accept="image/jpeg,image/png,image/webp"
+                                    onChange={handleFileChange} className="hidden" />
+                                  <span className="block text-xs px-3 py-1.5 rounded-lg text-white/50 hover:text-white transition-colors"
+                                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                    Replace
+                                  </span>
+                                </label>
+                                <button onClick={clearDesign}
+                                  className="text-xs px-3 py-1.5 rounded-lg text-red-400/70 hover:text-red-400 transition-colors"
+                                  style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.12)' }}>
+                                  Remove
+                                </button>
                               </div>
                             </div>
-                          </label>
-                          {(localPreview || designUrl) && !uploading && (
-                            <button onClick={clearDesign}
-                              className="text-xs text-white/25 hover:text-red-400 transition-colors mt-2 flex items-center gap-1">
-                              <span>×</span> Remove design
-                            </button>
+                          )}
+
+                          {/* Upload progress */}
+                          {uploading && (
+                            <div className="p-5 rounded-2xl flex flex-col items-center gap-3"
+                              style={{ background: 'rgba(107,66,38,0.08)', border: '1.5px dashed rgba(107,66,38,0.35)' }}>
+                              <Spinner size="md" className="text-ink-brown" />
+                              <div className="w-full max-w-xs">
+                                <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                                  <motion.div
+                                    className="h-full rounded-full"
+                                    style={{ background: 'linear-gradient(90deg,#6B4226,#C9967A)' }}
+                                    animate={{ width: `${uploadPct}%` }}
+                                    transition={{ duration: 0.2 }}
+                                  />
+                                </div>
+                                <p className="text-white/40 text-xs text-center mt-2">Uploading… {uploadPct}%</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Drop zone — shown when no design loaded yet */}
+                          {!uploading && !(localPreview || designUrl) && (
+                            <label
+                              className="block cursor-pointer"
+                              onDrop={handleDrop}
+                              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                              onDragLeave={() => setDragOver(false)}
+                            >
+                              <input type="file" accept="image/jpeg,image/png,image/webp"
+                                onChange={handleFileChange} className="hidden" />
+                              <motion.div
+                                animate={{ borderColor: dragOver ? 'rgba(139,90,60,0.9)' : 'rgba(107,66,38,0.4)' }}
+                                className="rounded-2xl p-8 text-center transition-all duration-200 flex flex-col items-center gap-4"
+                                style={{
+                                  border:     '2px dashed rgba(107,66,38,0.4)',
+                                  background: dragOver ? 'rgba(107,66,38,0.12)' : 'rgba(107,66,38,0.04)',
+                                }}
+                              >
+                                <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                                  style={{ background: 'rgba(107,66,38,0.18)', border: '1px solid rgba(107,66,38,0.35)' }}>
+                                  {dragOver ? (
+                                    <svg className="w-8 h-8 text-[#C9967A]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 13.5l3 3m0 0l3-3m-3 3v-6m1.06-4.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-8 h-8 text-[#8B5A3C]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                                    </svg>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-white/80 text-sm font-semibold">
+                                    {dragOver ? 'Drop to upload' : 'Upload your design'}
+                                  </p>
+                                  <p className="text-white/35 text-xs mt-1">
+                                    Drag & drop or <span className="text-[#C9967A] underline underline-offset-2">browse files</span>
+                                  </p>
+                                  <p className="text-white/20 text-xs mt-2">JPG · PNG · WEBP · Max 5 MB</p>
+                                </div>
+                              </motion.div>
+                            </label>
                           )}
                         </motion.div>
                       )}
@@ -805,6 +831,15 @@ export default function CustomizePage() {
                         <Card>
                           <SectionLabel>Position & Scale</SectionLabel>
 
+                          {/* Hint */}
+                          <div className="mb-4 px-3 py-2 rounded-xl flex items-center gap-2"
+                            style={{ background: 'rgba(107,66,38,0.08)', border: '1px solid rgba(107,66,38,0.2)' }}>
+                            <svg className="w-3.5 h-3.5 text-[#8B5A3C] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" />
+                            </svg>
+                            <p className="text-white/45 text-xs">Drag the dashed handle on the 3D viewer, or use the controls below</p>
+                          </div>
+
                           {/* Quick position grid */}
                           <div className="mb-4">
                             <p className="text-white/35 text-xs mb-2">Quick position</p>
@@ -830,7 +865,6 @@ export default function CustomizePage() {
                                 </button>
                               ))}
                             </div>
-                            <p className="text-white/20 text-[10px] mt-1.5">Or drag the design directly on the shirt</p>
                           </div>
 
                           {/* Scale */}

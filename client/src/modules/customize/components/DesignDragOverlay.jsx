@@ -1,7 +1,6 @@
 import { useRef, useEffect, useCallback } from 'react';
 
-// Chest zone as fraction of container dimensions
-// Calibrated for camera fov=42, z=3.6
+// Chest zone as fraction of container dimensions — calibrated for camera fov=42, z=3.6
 const ZONE = { left: 0.20, top: 0.28, right: 0.80, bottom: 0.70 };
 
 export function DesignDragOverlay({
@@ -22,7 +21,6 @@ export function DesignDragOverlay({
   const disableOrbit = () => { if (orbitRef?.current) orbitRef.current.enabled = false; };
   const enableOrbit  = () => { if (orbitRef?.current) orbitRef.current.enabled = true; };
 
-  // Screen position from normalized coords
   const leftPct = ((ZONE.left + designX * zoneW)       * 100).toFixed(2) + '%';
   const topPct  = ((ZONE.top  + (1 - designY) * zoneH) * 100).toFixed(2) + '%';
 
@@ -64,50 +62,22 @@ export function DesignDragOverlay({
 
   if (!designImage) return null;
 
-  const basePx = 80;
-  const designSizePx = Math.round(basePx * designScale);
+  const handleSize = Math.max(48, Math.round(72 * designScale));
 
   return (
     <div
       ref={containerRef}
       style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10, userSelect: 'none' }}
     >
-      {/* Print area zone boundary */}
-      <div style={{
-        position:      'absolute',
-        left:          `${ZONE.left  * 100}%`,
-        top:           `${ZONE.top   * 100}%`,
-        width:         `${zoneW      * 100}%`,
-        height:        `${zoneH      * 100}%`,
-        border:        '1.5px dashed rgba(139,90,60,0.4)',
-        borderRadius:  '8px',
-        pointerEvents: 'none',
-      }}>
-        {/* "Print Area" label */}
-        <span style={{
-          position:   'absolute',
-          top:        -18,
-          left:       '50%',
-          transform:  'translateX(-50%)',
-          fontSize:   10,
-          color:      'rgba(139,90,60,0.6)',
-          whiteSpace: 'nowrap',
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-        }}>
-          Print Area
-        </span>
-      </div>
-
-      {/* Draggable design handle */}
+      {/* Invisible drag zone — matches approximate design position in 3D */}
       <div
         style={{
           position:      'absolute',
           left:          leftPct,
           top:           topPct,
           transform:     `translate(-50%, -50%) rotate(${designRot}deg)`,
-          width:         designSizePx,
-          height:        designSizePx,
+          width:         handleSize,
+          height:        handleSize,
           cursor:        'grab',
           pointerEvents: 'auto',
           touchAction:   'none',
@@ -124,57 +94,44 @@ export function DesignDragOverlay({
           disableOrbit();
         }}
       >
-        {/* Design preview image */}
-        <img
-          src={designImage}
-          alt="Design"
-          draggable={false}
-          style={{
-            width:         '100%',
-            height:        '100%',
-            objectFit:     'contain',
-            opacity:       0.85,
-            pointerEvents: 'none',
-            display:       'block',
-          }}
-        />
-        {/* Selection border */}
+        {/* Dashed border indicates draggable region — design itself is rendered in 3D */}
         <div style={{
           position:      'absolute',
-          inset:         -4,
-          border:        '2px dashed rgba(139,90,60,0.8)',
+          inset:         0,
+          border:        '1.5px dashed rgba(139,90,60,0.65)',
           borderRadius:  6,
           pointerEvents: 'none',
-          boxShadow:     '0 0 12px rgba(107,66,38,0.3)',
+          boxShadow:     '0 0 8px rgba(107,66,38,0.2)',
         }} />
         {/* Corner handles */}
         {[
-          { top: -4, left: -4 }, { top: -4, right: -4 },
-          { bottom: -4, left: -4 }, { bottom: -4, right: -4 },
+          { top: -3, left: -3 }, { top: -3, right: -3 },
+          { bottom: -3, left: -3 }, { bottom: -3, right: -3 },
         ].map((pos, i) => (
           <div key={i} style={{
-            position:        'absolute',
-            width:           8, height: 8,
-            background:      '#8B5A3C',
-            borderRadius:    2,
-            pointerEvents:   'none',
+            position:      'absolute',
+            width:         7, height: 7,
+            background:    'rgba(139,90,60,0.9)',
+            borderRadius:  2,
+            pointerEvents: 'none',
             ...pos,
           }} />
         ))}
-        {/* Drag label */}
+        {/* Grab icon */}
         <div style={{
-          position:      'absolute',
-          top:           '50%',
-          left:          '50%',
-          transform:     'translate(-50%, -50%)',
-          fontSize:       9,
-          color:         'rgba(255,255,255,0.7)',
-          background:    'rgba(0,0,0,0.5)',
-          borderRadius:   4,
-          padding:        '1px 5px',
-          pointerEvents: 'none',
-          whiteSpace:    'nowrap',
-          letterSpacing: '0.04em',
+          position:       'absolute',
+          top:            '50%',
+          left:           '50%',
+          transform:      'translate(-50%, -50%)',
+          fontSize:        10,
+          color:          'rgba(201,150,122,0.85)',
+          background:     'rgba(0,0,0,0.45)',
+          borderRadius:    4,
+          padding:         '2px 6px',
+          pointerEvents:  'none',
+          whiteSpace:     'nowrap',
+          letterSpacing:  '0.04em',
+          backdropFilter: 'blur(4px)',
         }}>
           ✦ drag
         </div>

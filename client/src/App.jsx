@@ -37,8 +37,9 @@ import CompleteProfilePage from './modules/auth/pages/CompleteProfilePage';
 import CustomizePage   from './modules/customize/pages/CustomizePage';
 import CartPage        from './modules/cart/pages/CartPage';
 import CheckoutPage    from './modules/checkout/pages/CheckoutPage';
-import OrdersPage      from './modules/orders/pages/OrdersPage';
-import OrderDetailPage from './modules/orders/pages/OrderDetailPage';
+import OrdersPage       from './modules/orders/pages/OrdersPage';
+import OrderDetailPage  from './modules/orders/pages/OrderDetailPage';
+import OrderSuccessPage from './modules/orders/pages/OrderSuccessPage';
 import ProfilePage     from './modules/shop/pages/ProfilePage';
 
 // ── Admin ──────────────────────────────────────────────────────
@@ -150,8 +151,9 @@ function AppRoutes() {
       <Route path="/customize" element={<ProtectedOnly><PageLayout><CustomizePage /></PageLayout></ProtectedOnly>} />
       <Route path="/cart"          element={<ProtectedOnly><PageLayout><CartPage /></PageLayout></ProtectedOnly>} />
       <Route path="/checkout"      element={<ProtectedOnly><PageLayout><CheckoutPage /></PageLayout></ProtectedOnly>} />
-      <Route path="/orders"        element={<ProtectedOnly><PageLayout><OrdersPage /></PageLayout></ProtectedOnly>} />
-      <Route path="/orders/:id"    element={<ProtectedOnly><PageLayout><OrderDetailPage /></PageLayout></ProtectedOnly>} />
+      <Route path="/orders"            element={<ProtectedOnly><PageLayout><OrdersPage /></PageLayout></ProtectedOnly>} />
+      <Route path="/orders/success/:id" element={<ProtectedOnly><PageLayout><OrderSuccessPage /></PageLayout></ProtectedOnly>} />
+      <Route path="/orders/:id"     element={<ProtectedOnly><PageLayout><OrderDetailPage /></PageLayout></ProtectedOnly>} />
       <Route path="/profile"       element={<ProtectedOnly><PageLayout><ProfilePage /></PageLayout></ProtectedOnly>} />
 
       {/* Admin */}

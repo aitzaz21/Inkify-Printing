@@ -5,6 +5,7 @@ const orderItemSchema = new mongoose.Schema({
   product:     { type: mongoose.Schema.Types.ObjectId, ref: 'Product', default: null },
   productName: { type: String, required: true },
   shirtType:   { type: String, default: '' },
+  shirtTypeId: { type: String, default: '' },  // 3D model type: plain-tshirt | polo | vneck
   color:       { type: String, required: true },
   colorHex:    { type: String, default: '#FFFFFF' },
   size:        { type: String, required: true },
@@ -13,6 +14,13 @@ const orderItemSchema = new mongoose.Schema({
   designUrl:   { type: String, default: null },
   designId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Design', default: null },
   designNote:  { type: String, default: '' },
+  // Design placement on the 3D model (used for admin preview)
+  designTransform: {
+    x:        { type: Number, default: 0.5 },
+    y:        { type: Number, default: 0.55 },
+    scale:    { type: Number, default: 1.0 },
+    rotation: { type: Number, default: 0 },
+  },
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({

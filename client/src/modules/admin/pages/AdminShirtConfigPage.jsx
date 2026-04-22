@@ -16,10 +16,11 @@ const PRESET_COLORS = [
 ];
 
 export default function AdminShirtConfigPage() {
-  const [config,  setConfig]  = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving,  setSaving]  = useState(false);
-  const [toggling, setToggling] = useState(null); // shirt type id being toggled
+  const [config,      setConfig]      = useState(null);
+  const [loading,     setLoading]     = useState(true);
+  const [saving,      setSaving]      = useState(false);
+  const [toggling,    setToggling]    = useState(null);
+  const [selectedId,  setSelectedId]  = useState(null); // which shirt type card is focused
 
   // Color form
   const [colorName, setColorName] = useState('');
@@ -141,61 +142,97 @@ export default function AdminShirtConfigPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {config.shirtTypes.map(t => {
-            const meta = SHIRT_TYPE_META[t.id] || { label: t.name, description: '' };
-            const isToggling = toggling === t.id;
+            const meta        = SHIRT_TYPE_META[t.id] || { label: t.name, description: '' };
+            const isToggling  = toggling   === t.id;
+            const isSelected  = selectedId === t.id;
             return (
               <motion.div
                 key={t.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl p-5 flex flex-col gap-4"
+                onClick={() => setSelectedId(prev => prev === t.id ? null : t.id)}
+                className="rounded-2xl p-5 flex flex-col gap-4 cursor-pointer"
                 style={{
-                  border: t.enabled
-                    ? '1px solid rgba(107,66,38,0.45)'
-                    : '1px solid rgba(255,255,255,0.08)',
-                  background: t.enabled
-                    ? 'rgba(107,66,38,0.08)'
-                    : 'rgba(255,255,255,0.02)',
-                  opacity: t.enabled ? 1 : 0.55,
-                  transition: 'all 0.3s ease',
+                  border: isSelected
+                    ? '2px solid rgba(201,150,122,0.8)'
+                    : t.enabled
+                      ? '1px solid rgba(107,66,38,0.45)'
+                      : '1px solid rgba(255,255,255,0.08)',
+                  background: isSelected
+                    ? 'rgba(107,66,38,0.16)'
+                    : t.enabled
+                      ? 'rgba(107,66,38,0.08)'
+                      : 'rgba(255,255,255,0.02)',
+                  opacity:    t.enabled ? 1 : 0.6,
+                  transition: 'all 0.2s ease',
+                  boxShadow:  isSelected ? '0 0 0 3px rgba(107,66,38,0.25)' : 'none',
                 }}
               >
-                {/* 3D shirt silhouette icon */}
+                {/* Header: label + SVG preview */}
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-display font-semibold text-white text-sm">{meta.label}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-display font-semibold text-white text-sm">{meta.label}</p>
+                      {isSelected && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                          style={{ background: 'rgba(201,150,122,0.2)', color: '#C9967A', border: '1px solid rgba(201,150,122,0.35)' }}>
+                          Selected
+                        </span>
+                      )}
+                    </div>
                     <p className="text-white/35 text-xs mt-0.5">{meta.description}</p>
                   </div>
-                  <div className="flex-shrink-0 w-10 h-10"
-                    style={{ color: t.enabled ? '#8B5A3C' : 'rgba(255,255,255,0.2)' }}>
-                    <svg viewBox="0 0 100 100" fill="currentColor" className="w-full h-full">
-                      <path d="M35 12 L20 27 L10 22 L15 47 L25 47 L25 88 L75 88 L75 47 L85 47 L90 22 L80 27 L65 12 C62 19 38 19 35 12Z" />
+                  <div className="flex-shrink-0 w-12 h-12 ml-2"
+                    style={{ color: isSelected ? '#C9967A' : t.enabled ? '#8B5A3C' : 'rgba(255,255,255,0.2)' }}>
+                    <svg viewBox="0 0 100 110" fill="currentColor" className="w-full h-full drop-shadow-sm">
+                      {t.id === 'vneck'
+                        ? <path d="M38 10 L22 26 L8 20 L13 50 L24 50 L24 100 L76 100 L76 50 L87 50 L92 20 L78 26 L62 10 L50 46 Z" />
+                        : t.id === 'polo'
+                          ? <><path d="M38 10 L22 26 L8 20 L13 50 L24 50 L24 100 L76 100 L76 50 L87 50 L92 20 L78 26 L62 10 C60 6 55 5 50 12 C45 5 40 6 38 10Z" /><rect x="47" y="12" width="6" height="20" rx="2" fill="rgba(0,0,0,0.2)" /></>
+                          : <path d="M38 10 L22 26 L8 20 L13 50 L24 50 L24 100 L76 100 L76 50 L87 50 L92 20 L78 26 L62 10 C59 18 41 18 38 10Z" />
+                      }
                     </svg>
                   </div>
                 </div>
 
-                {/* 3D model note */}
-                <div className="px-3 py-2 rounded-lg text-xs"
-                  style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)' }}>
-                  Uses built-in 3D model — no image upload needed
+                {/* Status badge */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ background: t.enabled ? '#22c55e' : 'rgba(255,255,255,0.25)' }} />
+                    <span className="text-xs"
+                      style={{ color: t.enabled ? 'rgba(34,197,94,0.9)' : 'rgba(255,255,255,0.35)' }}>
+                      {t.enabled ? 'Visible to customers' : 'Hidden from customers'}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Enable / Disable toggle */}
+                {/* Enable / Disable toggle — stops click propagation to card */}
                 <button
-                  onClick={() => toggleShirtType(t.id)}
+                  onClick={(e) => { e.stopPropagation(); toggleShirtType(t.id); }}
                   disabled={isToggling}
-                  className="flex items-center justify-between w-full px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-60"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-60"
                   style={t.enabled
-                    ? { background: 'rgba(239,68,68,0.08)', color: 'rgba(239,68,68,0.8)', border: '1px solid rgba(239,68,68,0.15)' }
-                    : { background: 'rgba(34,197,94,0.08)', color: 'rgba(34,197,94,0.8)', border: '1px solid rgba(34,197,94,0.15)' }
+                    ? { background: 'rgba(239,68,68,0.08)', color: 'rgba(239,68,68,0.85)', border: '1px solid rgba(239,68,68,0.2)' }
+                    : { background: 'rgba(34,197,94,0.08)', color: 'rgba(34,197,94,0.85)', border: '1px solid rgba(34,197,94,0.2)' }
                   }
                 >
                   {isToggling ? (
-                    <Spinner size="sm" className="text-current mx-auto" />
+                    <Spinner size="sm" className="text-current" />
+                  ) : t.enabled ? (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                      </svg>
+                      Disable (hide from customers)
+                    </>
                   ) : (
                     <>
-                      <span>{t.enabled ? 'Enabled (click to disable)' : 'Disabled (click to enable)'}</span>
-                      <span className="text-lg">{t.enabled ? '✓' : '○'}</span>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Enable (show to customers)
                     </>
                   )}
                 </button>
@@ -203,6 +240,44 @@ export default function AdminShirtConfigPage() {
             );
           })}
         </div>
+
+        {/* Selected type info panel */}
+        {selectedId && (() => {
+          const t    = config.shirtTypes.find(x => x.id === selectedId);
+          const meta = SHIRT_TYPE_META[selectedId] || { label: t?.name, description: '' };
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl p-5"
+              style={{ background: 'rgba(107,66,38,0.1)', border: '1px solid rgba(107,66,38,0.35)' }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#C9967A]" />
+                  <p className="text-white font-semibold text-sm">{meta.label} — Details</p>
+                </div>
+                <button onClick={() => setSelectedId(null)} className="text-white/30 hover:text-white/60 transition-colors text-sm">×</button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                <div>
+                  <p className="text-white/35 mb-0.5">Type ID</p>
+                  <p className="text-white font-mono">{selectedId}</p>
+                </div>
+                <div>
+                  <p className="text-white/35 mb-0.5">Status</p>
+                  <p style={{ color: t?.enabled ? 'rgba(34,197,94,0.9)' : 'rgba(239,68,68,0.8)' }}>
+                    {t?.enabled ? 'Active — visible to customers' : 'Disabled — hidden'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-white/35 mb-0.5">Model</p>
+                  <p className="text-white/70">Built-in 3D geometry</p>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()}
 
         <div className="rounded-xl p-4 flex items-start gap-3"
           style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)' }}>
