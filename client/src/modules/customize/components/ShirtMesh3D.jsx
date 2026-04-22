@@ -1,82 +1,68 @@
 import { useRef, useMemo, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
+import { Line } from '@react-three/drei';
 import { createShirtGeometry, CHEST_BOUNDS_3D } from '../utils/shirtShapes';
 
-// Lerp helper
 const lerp = (a, b, t) => a + (b - a) * t;
+
+const printW  = CHEST_BOUNDS_3D.maxX - CHEST_BOUNDS_3D.minX;
+const printH  = CHEST_BOUNDS_3D.maxY - CHEST_BOUNDS_3D.minY;
+const printCX = (CHEST_BOUNDS_3D.minX + CHEST_BOUNDS_3D.maxX) / 2;
+const printCY = (CHEST_BOUNDS_3D.minY + CHEST_BOUNDS_3D.maxY) / 2;
+
+const PRINT_BORDER = [
+  [CHEST_BOUNDS_3D.minX, CHEST_BOUNDS_3D.minY, 0.048],
+  [CHEST_BOUNDS_3D.maxX, CHEST_BOUNDS_3D.minY, 0.048],
+  [CHEST_BOUNDS_3D.maxX, CHEST_BOUNDS_3D.maxY, 0.048],
+  [CHEST_BOUNDS_3D.minX, CHEST_BOUNDS_3D.maxY, 0.048],
+  [CHEST_BOUNDS_3D.minX, CHEST_BOUNDS_3D.minY, 0.048],
+];
 
 export function ShirtMesh3D({
   typeId,
   color,
   designImage,
-  designX     = 0.5,   // 0 = left, 1 = right
-  designY     = 0.6,   // 0 = bottom, 1 = top of chest area
-  designScale = 1.0,   // multiplier on base size
-  designRot   = 0,     // degrees
+  designX     = 0.5,
+  designY     = 0.55,
+  designScale = 1.0,
+  designRot   = 0,
+  showPrintArea = false,
 }) {
-  const shirtRef      = useRef();
-  const designRef     = useRef();
-  const materialRef   = useRef();
+  const shirtRef    = useRef();
+  const designRef   = useRef();
+  const materialRef = useRef();
   const [designTex, setDesignTex] = useState(null);
   const [targetOpacity, setTargetOpacity] = useState(1);
   const opacityRef = useRef(1);
 
-  // ── Geometry (recreated only when shirt type changes) ──────
   const geometry = useMemo(() => createShirtGeometry(typeId), [typeId]);
+  useEffect(() => () => geometry?.dispose(), [geometry]);
 
-  useEffect(() => {
-    return () => { geometry?.dispose(); };
-  }, [geometry]);
-
-  // ── Shirt material ─────────────────────────────────────────
   const shirtMaterial = useMemo(() => new THREE.MeshStandardMaterial({
     roughness: 0.82,
     metalness: 0.0,
     side: THREE.FrontSide,
   }), []);
 
-  // Update color directly on material (no re-render needed)
-  useEffect(() => {
-    shirtMaterial.color.set(color);
-  }, [color, shirtMaterial]);
+  useEffect(() => { shirtMaterial.color.set(color); }, [color, shirtMaterial]);
+  useEffect(() => () => shirtMaterial?.dispose(), [shirtMaterial]);
 
-  // Dispose on unmount
-  useEffect(() => {
-    return () => { shirtMaterial?.dispose(); };
-  }, [shirtMaterial]);
-
-  // ── Load design texture ────────────────────────────────────
   useEffect(() => {
     if (!designImage) { setDesignTex(null); return; }
-
     const loader = new THREE.TextureLoader();
     loader.crossOrigin = 'anonymous';
-
     loader.load(
       designImage,
-      (tex) => {
-        tex.colorSpace = THREE.SRGBColorSpace;
-        // Preserve aspect ratio in UV — handled by plane scale below
-        setDesignTex(tex);
-      },
+      (tex) => { tex.colorSpace = THREE.SRGBColorSpace; setDesignTex(tex); },
       undefined,
       () => setDesignTex(null),
     );
-
-    return () => {
-      // No cleanup needed; React will replace with new load on next effect
-    };
   }, [designImage]);
 
-  // Dispose design texture when it changes
-  useEffect(() => {
-    return () => { designTex?.dispose(); };
-  }, [designTex]);
+  useEffect(() => () => designTex?.dispose(), [designTex]);
 
-  // ── Fade animation on type change ─────────────────────────
   useEffect(() => {
-    // Quick fade-out then fade-in when type switches
     setTargetOpacity(0);
     const t = setTimeout(() => setTargetOpacity(1), 150);
     return () => clearTimeout(t);
@@ -84,33 +70,55 @@ export function ShirtMesh3D({
 
   useFrame((_, delta) => {
     if (!shirtRef.current) return;
-    const speed = 8;
-    opacityRef.current = lerp(opacityRef.current, targetOpacity, Math.min(1, delta * speed));
+    opacityRef.current = lerp(opacityRef.current, targetOpacity, Math.min(1, delta * 8));
     shirtRef.current.material.opacity = opacityRef.current;
     shirtRef.current.material.transparent = opacityRef.current < 1;
   });
 
-  // ── Compute design plane 3D position from normalised coords ─
   const px = lerp(CHEST_BOUNDS_3D.minX, CHEST_BOUNDS_3D.maxX, designX);
   const py = lerp(CHEST_BOUNDS_3D.minY, CHEST_BOUNDS_3D.maxY, designY);
-  // ExtrudeGeometry depth=0.07, centered → front face at z≈+0.035; add 0.01 to avoid z-fighting
-  const pz = 0.045;
-
-  // Base design plane size (in 3D units) — scale applied via mesh.scale
+  const pz = 0.047;
   const BASE_DESIGN_SIZE = 0.68;
 
   return (
     <group>
-      {/* Shirt body */}
-      <mesh
-        ref={shirtRef}
-        geometry={geometry}
-        material={shirtMaterial}
-        castShadow
-        receiveShadow
-      />
+      <mesh ref={shirtRef} geometry={geometry} material={shirtMaterial} castShadow receiveShadow />
 
-      {/* Design overlay — only rendered when an image is loaded */}
+      {/* Print area indicator */}
+      {showPrintArea && (
+        <>
+          <mesh position={[printCX, printCY, 0.046]}>
+            <planeGeometry args={[printW, printH]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.05} depthWrite={false} />
+          </mesh>
+          <Line
+            points={PRINT_BORDER}
+            color="#8B5A3C"
+            lineWidth={1.5}
+            dashed
+            dashSize={0.045}
+            gapSize={0.025}
+          />
+          {/* Corner crosshairs */}
+          <Line
+            points={[
+              [printCX - 0.02, printCY, 0.048],
+              [printCX + 0.02, printCY, 0.048],
+            ]}
+            color="rgba(139,90,60,0.5)"
+            lineWidth={0.8}
+          />
+          <Line
+            points={[
+              [printCX, printCY - 0.02, 0.048],
+              [printCX, printCY + 0.02, 0.048],
+            ]}
+            color="rgba(139,90,60,0.5)"
+            lineWidth={0.8}
+          />
+        </>
+      )}
+
       {designTex && (
         <mesh
           ref={designRef}

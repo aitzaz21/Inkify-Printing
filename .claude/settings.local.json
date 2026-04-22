@@ -5,7 +5,8 @@
       "Bash(npm install *)",
       "Bash(npx vite *)",
       "Bash(node -e ' *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(node -e \"const p = require\\('./node_modules/@react-three/drei/package.json'\\); console.log\\(p.version\\)\")"
     ]
   }
 }
