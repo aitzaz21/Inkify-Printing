@@ -19,32 +19,51 @@ router.get('/featured', async (req, res) => {
   } catch (e) { err(res, e); }
 });
 
-// ── Public: get all reviews (paginated) ───────────────────────
+// ── Public: get all reviews (paginated, optional rating filter) ─
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 12 } = req.query;
+    const { page = 1, limit = 12, rating } = req.query;
+    const filter = {};
+    if (rating && !isNaN(Number(rating))) filter.rating = Number(rating);
+
     const [reviews, total] = await Promise.all([
-      Review.find()
+      Review.find(filter)
         .populate('user', 'firstName lastName avatar')
         .populate('order', 'orderNumber')
-        .sort({ createdAt: -1 })
+        .sort({ isFeatured: -1, createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(Number(limit)),
-      Review.countDocuments(),
+      Review.countDocuments(filter),
     ]);
     ok(res, { reviews, total, page: Number(page), pages: Math.ceil(total / limit) });
   } catch (e) { err(res, e); }
 });
 
-// ── Public: get stats (for homepage dynamic stats) ────────────
+// ── Public: get stats with distribution ───────────────────────
 router.get('/stats', async (req, res) => {
   try {
-    const [totalReviews, avgResult] = await Promise.all([
+    const [total, aggResult] = await Promise.all([
       Review.countDocuments(),
-      Review.aggregate([{ $group: { _id: null, avg: { $avg: '$rating' } } }]),
+      Review.aggregate([
+        {
+          $group: {
+            _id: '$rating',
+            count: { $sum: 1 },
+            avg:   { $avg: '$rating' },
+          },
+        },
+      ]),
     ]);
-    const avgRating = avgResult[0]?.avg ? Math.round(avgResult[0].avg * 10) / 10 : 5.0;
-    ok(res, { totalReviews, avgRating });
+
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    let totalRatingSum = 0;
+    aggResult.forEach(r => {
+      distribution[r._id] = r.count;
+      totalRatingSum += r._id * r.count;
+    });
+    const avgRating = total > 0 ? Math.round((totalRatingSum / total) * 10) / 10 : 5.0;
+
+    ok(res, { total, avgRating, distribution });
   } catch (e) { err(res, e); }
 });
 

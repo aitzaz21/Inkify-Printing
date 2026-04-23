@@ -29,9 +29,9 @@ const NAV_LINKS = [
 const DropItem = ({ to, icon, label, badge, onClick }) => (
   <Link to={to} onClick={onClick}
     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 group"
-    style={{ color: 'rgba(255,255,255,0.65)' }}
-    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}
-    onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}
+    style={{ color: 'rgba(255,255,255,0.78)' }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#fff'; }}
+    onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(255,255,255,0.78)'; }}
   >
     <span className="text-white/30 flex-shrink-0">{icon}</span>
     <span className="flex-1">{label}</span>
@@ -148,7 +148,7 @@ export default function Navbar() {
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     active
                       ? 'text-white bg-white/8'
-                      : 'text-white/55 hover:text-white hover:bg-white/5'
+                      : 'text-white/70 hover:text-white hover:bg-white/6'
                   }`}
                 >
                   {l.label}
@@ -238,7 +238,7 @@ export default function Navbar() {
                         {/* User info header */}
                         <div className="px-4 py-3 border-b border-white/[0.07]">
                           <p className="text-white text-sm font-medium truncate">{user.firstName} {user.lastName}</p>
-                          <p className="text-white/35 text-xs truncate mt-0.5">{user.email}</p>
+                          <p className="text-white/48 text-xs truncate mt-0.5">{user.email}</p>
                         </div>
                         <div className="p-1.5">
                           <DropItem to="/profile"        onClick={close} label="My Profile"    icon={<Icon d={ICONS.user}    />} />

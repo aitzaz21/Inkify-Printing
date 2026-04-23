@@ -43,8 +43,8 @@ const FEATURES = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
       </svg>
     ),
-    title: 'Live 3D Preview',
-    desc:  'See your design on the shirt in real-time 3D before you order. Rotate, zoom, reposition.',
+    title: 'Realistic Design Preview',
+    desc:  'See your design on a realistic shirt mockup before ordering. Position front & back prints exactly right.',
   },
   {
     icon: (
@@ -107,7 +107,7 @@ const HOW_IT_WORKS = [
   {
     step: '02',
     title: 'Add Your Design',
-    desc:  'Upload your artwork or choose from our marketplace. Drag and drop to position it perfectly in real-time 3D.',
+    desc:  'Upload your artwork or choose from our marketplace. Drag to position it on front or back — see it in real-time.',
     icon: (
       <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.4" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
@@ -227,9 +227,9 @@ export default function HomePage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.25, duration: 0.6 }}
-                className="text-white/50 text-lg max-w-md mb-4 leading-relaxed"
+                className="text-white/62 text-lg max-w-md mb-4 leading-relaxed"
               >
-                Create custom printed shirts with a live 3D preview. Upload your design, position it exactly right, and we'll deliver it to your door.
+                Create custom printed shirts with a realistic live preview. Upload your design for front &amp; back, position it perfectly, and we'll deliver it to your door.
               </motion.p>
 
               {/* USP bullets */}
@@ -369,7 +369,7 @@ export default function HomePage() {
             ].map((s, i) => (
               <div key={i} className="text-center">
                 <p className="font-display text-2xl sm:text-3xl font-bold text-white">{s.value}</p>
-                <p className="text-white/30 text-xs tracking-wide mt-1">{s.label}</p>
+                <p className="text-white/48 text-xs tracking-wide mt-1">{s.label}</p>
               </div>
             ))}
           </motion.div>
@@ -477,7 +477,7 @@ export default function HomePage() {
             </h2>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <p className="text-white/40 text-sm max-w-md mx-auto">
+            <p className="text-white/58 text-sm max-w-md mx-auto">
               Choose your canvas — we'll take care of the rest.
             </p>
           </FadeIn>
@@ -501,7 +501,7 @@ export default function HomePage() {
                   </h2>
                 </FadeIn>
                 <FadeIn delay={0.1}>
-                  <p className="text-white/40 text-sm mt-2 max-w-sm">
+                  <p className="text-white/58 text-sm mt-2 max-w-sm">
                     Browse creator designs — select one and place your order instantly.
                   </p>
                 </FadeIn>
@@ -533,7 +533,7 @@ export default function HomePage() {
                       />
                     </div>
                     <div className="p-2.5">
-                      <p className="text-white/75 text-xs font-medium truncate">{d.title}</p>
+                      <p className="text-white text-xs font-semibold truncate">{d.title}</p>
                       <p className="text-[#C9967A] text-[11px] mt-0.5">
                         {d.price === 0 ? 'Free' : `PKR ${Math.round(d.price).toLocaleString()}`}
                       </p>
@@ -570,22 +570,35 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {testimonials.map((t, i) => (
               <FadeIn key={i} delay={i * 0.08}>
-                <div className="glass-card p-6 flex flex-col gap-4 hover:border-[rgba(107,66,38,0.35)] transition-all duration-300 h-full">
+                <div className="h-full flex flex-col gap-4 p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
+                  style={{
+                    background: 'rgba(18,14,10,0.85)',
+                    border: '1px solid rgba(107,66,38,0.28)',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
+                  }}>
                   {/* Stars */}
                   <div className="flex gap-0.5">
                     {[1,2,3,4,5].map(s => <Star key={s} filled={s <= (t.rating || 5)} />)}
                   </div>
-                  <p className="text-white/60 text-sm leading-relaxed flex-1 line-clamp-3">
+                  <p className="text-white/78 text-sm leading-relaxed flex-1 line-clamp-4">
                     &ldquo;{t.text}&rdquo;
                   </p>
-                  <div className="flex items-center gap-3 pt-3 border-t border-white/[0.07]">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                  <div className="flex items-center gap-3 pt-3"
+                    style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
                       style={{ background: 'linear-gradient(135deg,#6B4226,#8B5A3C)' }}>
                       {t.name?.[0] || 'C'}
                     </div>
                     <div>
-                      <p className="text-white text-sm font-medium leading-none">{t.name}</p>
-                      <p className="text-white/30 text-xs mt-0.5">{t.role}</p>
+                      <p className="text-white text-sm font-semibold leading-tight">{t.name}</p>
+                      <p className="text-white/38 text-xs mt-0.5">{t.role}</p>
+                    </div>
+                    <div className="ml-auto flex items-center gap-1 flex-shrink-0"
+                      style={{ background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.18)', borderRadius:999, padding:'3px 7px' }}>
+                      <svg className="w-2.5 h-2.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                      <span className="text-emerald-400 text-[9px] font-bold">Verified</span>
                     </div>
                   </div>
                 </div>
@@ -593,7 +606,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          <FadeIn delay={0.3} className="text-center mt-8">
+          <FadeIn delay={0.3} className="text-center mt-10">
             <Link to="/reviews" className="btn-ghost inline-flex">
               View all reviews
               <svg className="w-4 h-4 opacity-60" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -621,7 +634,7 @@ export default function HomePage() {
                 style={{ background: 'rgba(107,66,38,0.15)', border: '1px solid rgba(107,66,38,0.2)' }}>
                 {t.icon}
               </div>
-              <span className="text-white/50 text-xs leading-tight font-medium">{t.text}</span>
+              <span className="text-white/72 text-xs leading-tight font-semibold">{t.text}</span>
             </div>
           ))}
         </div>
@@ -642,7 +655,7 @@ export default function HomePage() {
                 <h2 className="font-display text-3xl sm:text-5xl font-bold text-white mb-4 mt-2">
                   Your design.<br /><span className="italic text-gradient">Your shirt.</span>
                 </h2>
-                <p className="text-white/45 mb-10 max-w-md mx-auto text-sm leading-relaxed">
+                <p className="text-white/62 mb-10 max-w-md mx-auto text-sm leading-relaxed">
                   Create your free account and place your first custom shirt order in under 3 minutes.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
