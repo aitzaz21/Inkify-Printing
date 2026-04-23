@@ -303,11 +303,11 @@ export default function HomePage() {
 
                 {/* Floating UI elements */}
                 {[
-                  { label: 'Design uploaded ✓',    sub: 'inkify-logo.png · 2.4 MB', top: '8%',  left: '5%',  w: '58%', delay: 0.5 },
-                  { label: 'Print area: Chest',     sub: 'Position: Center · Scale: 1.2×', top: '28%', left: '38%', w: '57%', delay: 0.65 },
-                  { label: 'Color selected',         sub: 'Navy Blue · #1e3a5f',    top: '50%', left: '8%',  w: '44%', delay: 0.8 },
-                  { label: 'Size: L · Qty: 2',      sub: 'PKR 3,998 total',         top: '65%', left: '42%', w: '53%', delay: 0.95 },
-                  { label: '🚚 Dispatches in 48h',  sub: 'Tracked delivery included', top: '83%', left: '12%', w: '62%', delay: 1.1 },
+                  { label: 'Design uploaded ✓',   sub: 'inkify-logo.png · 2.4 MB',       top: '8%',  left: '5%',  w: '58%', delay: 0.5  },
+                  { label: 'Print area: Chest',    sub: 'Position: Center · Scale: 1.2×', top: '28%', left: '38%', w: '57%', delay: 0.65 },
+                  { label: 'Color selected',        sub: 'Navy Blue · #1e3a5f',            top: '50%', left: '8%',  w: '44%', delay: 0.8  },
+                  { label: 'Size: L · Qty: 2',     sub: 'PKR 3,998 total',                top: '65%', left: '42%', w: '53%', delay: 0.95 },
+                  { label: '🚚 Dispatches in 48h', sub: 'Tracked delivery included',       top: '80%', left: '12%', w: '62%', delay: 1.1  },
                 ].map((item, i) => (
                   <motion.div
                     key={i}
@@ -326,18 +326,6 @@ export default function HomePage() {
                     <p className="text-white/35 text-[10px] mt-0.5">{item.sub}</p>
                   </motion.div>
                 ))}
-
-                {/* Bottom status bar */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1.3 }}
-                  className="absolute bottom-5 left-5 right-5 px-4 py-3 rounded-xl flex items-center gap-3"
-                  style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}
-                >
-                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-                  <span className="text-emerald-400/80 text-xs font-medium">Ready to print — quality check passed</span>
-                </motion.div>
               </div>
 
               {/* Floating badge */}
@@ -349,7 +337,6 @@ export default function HomePage() {
                 style={{ background: 'linear-gradient(135deg,#6B4226,#8B5A3C)', boxShadow: '0 8px 24px rgba(107,66,38,0.5)' }}
               >
                 <p className="text-white text-xs font-bold">4.9★ Rated</p>
-                <p className="text-white/60 text-[10px]">50K+ orders</p>
               </motion.div>
             </motion.div>
           </div>
@@ -359,13 +346,12 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.5 }}
-            className="mt-16 pt-8 border-t border-white/[0.07] grid grid-cols-2 sm:grid-cols-4 gap-6"
+            className="mt-16 pt-8 border-t border-white/[0.07] grid grid-cols-3 gap-6"
           >
             {[
-              { value: homeStats.ordersDelivered || '50K+', label: 'Orders Delivered' },
-              { value: `${homeStats.avgRating || '4.9'}★`,  label: 'Average Rating'   },
-              { value: homeStats.turnaround    || '72h',    label: 'Max Turnaround'   },
-              { value: homeStats.satisfaction  || '100%',   label: 'Satisfaction'     },
+              { value: `${homeStats.avgRating || '4.9'}★`, label: 'Average Rating' },
+              { value: homeStats.turnaround   || '72h',    label: 'Max Turnaround' },
+              { value: homeStats.satisfaction || '100%',   label: 'Satisfaction'   },
             ].map((s, i) => (
               <div key={i} className="text-center">
                 <p className="font-display text-2xl sm:text-3xl font-bold text-white">{s.value}</p>

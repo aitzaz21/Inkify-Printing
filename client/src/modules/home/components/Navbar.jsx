@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../shared/hooks/useAuthContext';
 import { useCart } from '../../../shared/context/CartContext';
+import { orderAPI } from '../../orders/services/order.service';
+import { reviewAPI } from '../../reviews/services/review.service';
 
 // ── Icons ────────────────────────────────────────────────────────
 const Icon = ({ d, className = 'w-4 h-4' }) => (
@@ -45,10 +47,11 @@ const DropItem = ({ to, icon, label, badge, onClick }) => (
 );
 
 export default function Navbar() {
-  const [scrolled,   setScrolled]   = useState(false);
-  const [menuOpen,   setMenuOpen]   = useState(false);
-  const [dropOpen,   setDropOpen]   = useState(false);
-  const [announced,  setAnnounced]  = useState(true);
+  const [scrolled,      setScrolled]      = useState(false);
+  const [menuOpen,      setMenuOpen]      = useState(false);
+  const [dropOpen,      setDropOpen]      = useState(false);
+  const [announced,     setAnnounced]     = useState(false);
+  const [pendingReviews, setPendingReviews] = useState(0);
   const dropRef = useRef(null);
 
   const { user, logout } = useAuth();
@@ -74,6 +77,23 @@ export default function Navbar() {
 
   // Close menu on route change
   useEffect(() => { setMenuOpen(false); setDropOpen(false); }, [pathname]);
+
+  // Check for unreviewed delivered orders (for badge indicator)
+  useEffect(() => {
+    if (!user) { setPendingReviews(0); return; }
+    Promise.all([
+      orderAPI.getMyOrders(),
+      reviewAPI.getMy().catch(() => ({ data: { reviews: [] } })),
+    ]).then(([ordRes, revRes]) => {
+      const reviewedIds = new Set(
+        (revRes.data.reviews || []).map(r => r.order?._id).filter(Boolean)
+      );
+      const n = (ordRes.data.orders || []).filter(
+        o => o.status === 'delivered' && !reviewedIds.has(o._id)
+      ).length;
+      setPendingReviews(n);
+    }).catch(() => {});
+  }, [user, pathname]);
 
   const handleLogout = () => { logout(); navigate('/'); };
   const close = () => { setMenuOpen(false); setDropOpen(false); };
@@ -207,14 +227,21 @@ export default function Navbar() {
                       borderColor:  dropOpen ? 'rgba(107,66,38,0.4)' : 'rgba(255,255,255,0.1)',
                     }}
                   >
-                    {user.avatar ? (
-                      <img src={user.avatar} alt="" className="w-6 h-6 rounded-lg object-cover" />
-                    ) : (
-                      <div className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg,#6B4226,#8B5A3C)' }}>
-                        {initials}
-                      </div>
-                    )}
+                    <span className="relative flex-shrink-0">
+                      {user.avatar ? (
+                        <img src={user.avatar} alt="" className="w-6 h-6 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-white"
+                          style={{ background: 'linear-gradient(135deg,#6B4226,#8B5A3C)' }}>
+                          {initials}
+                        </div>
+                      )}
+                      {/* Review pending dot */}
+                      {pendingReviews > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0e0b08]"
+                          style={{ background: '#f97316' }} />
+                      )}
+                    </span>
                     <span className="text-sm text-white/75 max-w-[96px] truncate">{user.firstName}</span>
                     <Icon d={ICONS.chevron}
                       className={`w-3.5 h-3.5 text-white/30 transition-transform duration-200 ${dropOpen ? 'rotate-180' : ''}`} />
@@ -245,6 +272,21 @@ export default function Navbar() {
                           <DropItem to="/orders"         onClick={close} label="My Orders"     icon={<Icon d={ICONS.orders}  />} />
                           <DropItem to="/marketplace/my" onClick={close} label="My Designs"    icon={<Icon d={ICONS.designs} />} />
                           <DropItem to="/cart"           onClick={close} label="My Cart"       icon={<Icon d={ICONS.cart}    />} badge={count} />
+                          {/* Rate orders item — only visible when there are pending reviews */}
+                          {pendingReviews > 0 && (
+                            <Link to="/orders" onClick={close}
+                              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 mx-0"
+                              style={{ background: 'rgba(107,66,38,0.12)', border: '1px solid rgba(107,66,38,0.22)', marginTop: 4, marginBottom: 4 }}
+                              onMouseEnter={e => { e.currentTarget.style.background='rgba(107,66,38,0.22)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background='rgba(107,66,38,0.12)'; }}>
+                              <span className="text-base flex-shrink-0">⭐</span>
+                              <span className="flex-1 text-[#C9967A] font-semibold">Rate Your Orders</span>
+                              <span className="min-w-[18px] h-[18px] rounded-full text-[10px] font-bold flex items-center justify-center px-1 text-white"
+                                style={{ background: 'linear-gradient(135deg,#6B4226,#8B5A3C)' }}>
+                                {pendingReviews > 9 ? '9+' : pendingReviews}
+                              </span>
+                            </Link>
+                          )}
                           {user.role === 'admin' && (
                             <DropItem to="/admin"        onClick={close} label="Admin Panel"   icon={<Icon d={ICONS.admin}   />} />
                           )}

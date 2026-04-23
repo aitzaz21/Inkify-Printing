@@ -3,7 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider } from './shared/hooks/useAuthContext';
 import { useAuth } from './shared/hooks/useAuthContext';
 import { PageLoader } from './shared/components/Spinner';
-import FloatingCartButton from './shared/components/FloatingCartButton';
+import FloatingCartButton    from './shared/components/FloatingCartButton';
+import FloatingReviewPrompt from './modules/reviews/components/FloatingReviewPrompt';
 
 // ── Layout ─────────────────────────────────────────────────────
 import Navbar from './modules/home/components/Navbar';
@@ -104,6 +105,7 @@ const PageLayout = ({ children }) => (
     </motion.main>
     <Footer />
     <FloatingCartButton />
+    <FloatingReviewPrompt />
   </>
 );
 
