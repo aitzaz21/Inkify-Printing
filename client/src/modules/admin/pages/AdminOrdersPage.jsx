@@ -185,11 +185,12 @@ const OrderCard = ({ order, onStatusChange, onReverse }) => {
           <div className="rounded-xl p-3"
             style={{ background:'rgba(59,130,246,0.06)', border:'1px solid rgba(59,130,246,0.15)' }}>
             <p className="text-blue-400/55 text-[10px] tracking-widest uppercase font-semibold mb-1">Card Payment</p>
-            <p className="text-white/65 text-xs">
-              Transaction ID: <span className="font-mono text-white/85 ml-1">{order.transactionId || '—'}</span>
+            <p className="text-white/65 text-xs flex items-center gap-1 flex-wrap">
+              <span>Transaction:</span>
+              <span className="font-mono text-white/85 break-all">{order.transactionId || '—'}</span>
             </p>
             {order.paymentReference && (
-              <p className="text-white/45 text-xs mt-0.5">
+              <p className="text-white/45 text-xs mt-0.5 truncate">
                 Ref: <span className="font-mono">{order.paymentReference}</span>
               </p>
             )}
@@ -442,12 +443,12 @@ export default function AdminOrdersPage() {
             { label: 'Total Orders',   value: stats.total,                     color: 'text-white'       },
             { label: 'Pending',         value: stats.pending,                   color: 'text-yellow-400'  },
             { label: 'Delivered',       value: stats.delivered,                 color: 'text-emerald-400' },
-            { label: 'Paid Revenue',    value: `PKR ${Math.round(stats.revenue).toLocaleString()}`, color: 'text-[#C9967A]' },
+            { label: 'Paid Revenue',    value: stats.revenue >= 1000000 ? `PKR ${(stats.revenue/1000000).toFixed(1)}M` : stats.revenue >= 1000 ? `PKR ${(stats.revenue/1000).toFixed(0)}K` : `PKR ${Math.round(stats.revenue)}`, color: 'text-[#C9967A]' },
           ].map(s => (
             <div key={s.label} className="rounded-2xl p-4"
               style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)' }}>
-              <p className="text-white/30 text-xs mb-1">{s.label}</p>
-              <p className={`font-display text-xl font-bold ${s.color}`}>{s.value}</p>
+              <p className="text-white/30 text-xs mb-1 truncate">{s.label}</p>
+              <p className={`font-display text-xl font-bold truncate ${s.color}`}>{s.value}</p>
             </div>
           ))}
         </div>

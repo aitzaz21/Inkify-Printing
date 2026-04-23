@@ -116,20 +116,20 @@ export default function OrderDetailPage() {
           className="rounded-2xl p-6 sm:p-8 mb-5"
           style={{ background:'rgba(18,14,10,0.82)', border:'1px solid rgba(107,66,38,0.25)', boxShadow:'0 8px 32px rgba(0,0,0,0.45)' }}>
 
-          <div className="flex flex-col sm:flex-row sm:items-start gap-4 justify-between mb-6">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
+            <div className="min-w-0">
               <p className="text-white/35 text-xs mb-1">
-                {new Date(order.createdAt).toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
+                {new Date(order.createdAt).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}
               </p>
-              <h1 className="font-display text-2xl font-bold text-white mb-2.5">{order.orderNumber}</h1>
+              <h1 className="font-display text-2xl font-bold text-white mb-2.5 truncate">{order.orderNumber}</h1>
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
                 style={{ background:`${sc}18`, color:sc, border:`1px solid ${sc}28` }}>
                 <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background:sc }} />
                 {STATUS_LABELS[order.status] || order.status}
               </span>
             </div>
-            <div className="text-right">
-              <p className="font-display text-2xl font-bold text-white">
+            <div className="sm:text-right flex-shrink-0">
+              <p className="font-display text-2xl font-bold text-white whitespace-nowrap">
                 PKR {Math.round(order.total).toLocaleString()}
               </p>
               <p className="text-white/35 text-xs mt-1 capitalize">
@@ -140,11 +140,12 @@ export default function OrderDetailPage() {
 
           {/* ── Progress timeline ────────────────────────────── */}
           {!isCancelled && (
-            <div className="relative">
-              {/* Connecting line */}
-              <div className="absolute top-5 left-5 right-5 h-px"
+            <div className="relative pt-2">
+              {/* Background track line */}
+              <div className="absolute top-7 left-5 right-5 h-px"
                 style={{ background:'rgba(255,255,255,0.07)' }} />
-              <div className="absolute top-5 left-5 h-px transition-all duration-700"
+              {/* Progress fill line */}
+              <div className="absolute top-7 left-5 h-px transition-all duration-700"
                 style={{
                   background:'linear-gradient(90deg,#6B4226,#C9967A)',
                   width: statusIdx >= 0
@@ -158,35 +159,43 @@ export default function OrderDetailPage() {
                   const current = i === statusIdx;
                   const future  = i > statusIdx;
                   return (
-                    <div key={step.key} className="flex flex-col items-center gap-2" style={{ width: `${100 / TIMELINE.length}%` }}>
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-base transition-all duration-300 relative z-10"
+                    <div key={step.key} className="flex flex-col items-center gap-1.5" style={{ width: `${100 / TIMELINE.length}%` }}>
+                      {/* Step circle */}
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300 relative z-10 flex-shrink-0"
                         style={{
                           background: done ? 'rgba(34,197,94,0.18)' : current ? 'linear-gradient(135deg,#6B4226,#8B5A3C)' : 'rgba(255,255,255,0.05)',
                           border: done ? '2px solid rgba(34,197,94,0.4)' : current ? '2px solid rgba(107,66,38,0.5)' : '1px solid rgba(255,255,255,0.09)',
-                          boxShadow: current ? '0 0 0 4px rgba(107,66,38,0.18)' : 'none',
+                          boxShadow: current ? '0 0 0 4px rgba(107,66,38,0.16)' : 'none',
+                          fontSize: 14,
                         }}>
                         {done ? (
-                          <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                           </svg>
                         ) : (
-                          <span className={future ? 'text-white/20 text-sm' : 'text-sm'}>{step.icon}</span>
+                          <span style={{ opacity: future ? 0.2 : 1 }}>{step.icon}</span>
                         )}
                       </div>
-                      <div className="text-center px-1">
-                        <p className={`text-[10px] font-semibold leading-tight ${done ? 'text-emerald-400/70' : current ? 'text-white' : 'text-white/25'}`}>
+                      {/* Label – short on mobile, full on sm+ */}
+                      <div className="text-center w-full overflow-hidden">
+                        <p className={`hidden sm:block text-[10px] font-semibold leading-tight truncate px-0.5 ${done ? 'text-emerald-400/70' : current ? 'text-white' : 'text-white/22'}`}>
                           {step.label}
                         </p>
-                        {current && (
-                          <p className="text-[9px] text-[#C9967A]/70 mt-0.5 hidden sm:block leading-tight">
-                            {step.desc}
-                          </p>
-                        )}
+                        <p className={`sm:hidden text-[9px] font-bold leading-tight ${done ? 'text-emerald-400/70' : current ? 'text-[#C9967A]' : 'text-white/20'}`}>
+                          {step.label.slice(0, 4)}
+                        </p>
                       </div>
                     </div>
                   );
                 })}
               </div>
+
+              {/* Current step description — below the timeline */}
+              {statusIdx >= 0 && (
+                <p className="text-center text-xs text-[#C9967A]/65 mt-3 leading-snug">
+                  {TIMELINE[statusIdx]?.desc}
+                </p>
+              )}
             </div>
           )}
 

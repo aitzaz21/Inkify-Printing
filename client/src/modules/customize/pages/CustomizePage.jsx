@@ -346,8 +346,8 @@ export default function CustomizePage() {
           <h1 className="font-display text-3xl sm:text-4xl font-bold text-white">
             Create Your Custom Shirt
           </h1>
-          <p className="text-white/35 text-sm mt-2">
-            Realistic 2D preview · Front & back design · Drag to position
+          <p className="text-white/35 text-sm mt-2 leading-relaxed">
+            Realistic 2D preview · Front &amp; back · Drag to position
           </p>
         </div>
 
@@ -410,38 +410,38 @@ export default function CustomizePage() {
               />
 
               {/* Context hint */}
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none"
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none w-max max-w-[calc(100%-24px)]"
                 style={{
-                  background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '4px 14px',
+                  background: 'rgba(0,0,0,0.62)', backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '4px 12px',
                 }}>
                 {activeDesignImg ? (
-                  <p className="text-white/45 text-xs">Drag design to reposition</p>
+                  <p className="text-white/45 text-xs whitespace-nowrap">Drag design to reposition</p>
                 ) : step === 2 ? (
-                  <p className="text-[#8B5A3C] text-xs">Upload a design to see it on the shirt</p>
+                  <p className="text-[#8B5A3C] text-xs whitespace-nowrap">Upload a design to preview</p>
                 ) : (
-                  <p className="text-white/35 text-xs">Switch between Front / Back views</p>
+                  <p className="text-white/35 text-xs whitespace-nowrap">Front / Back toggle above</p>
                 )}
               </div>
             </div>
 
             {/* Price bar */}
-            <div className="mt-3 rounded-2xl px-5 py-4 flex items-center justify-between"
+            <div className="mt-3 rounded-2xl px-4 py-3.5 flex items-center justify-between gap-2 min-w-0"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-white/35 text-xs mb-0.5">Unit price</p>
-                <p className="font-display text-2xl font-bold text-white leading-none">
+                <p className="font-display text-xl sm:text-2xl font-bold text-white leading-none truncate">
                   PKR {unitPrice().toLocaleString()}
                 </p>
                 {totalDesignPrice > 0 && (
-                  <p className="text-white/25 text-xs mt-1">
-                    inc. PKR {Math.round(totalDesignPrice).toLocaleString()} design fee
+                  <p className="text-white/25 text-[11px] mt-1 truncate">
+                    +PKR {Math.round(totalDesignPrice).toLocaleString()} design
                   </p>
                 )}
               </div>
-              <div className="text-right">
-                <p className="text-white/35 text-xs mb-0.5">×{qty} items</p>
-                <p className="font-display text-xl font-semibold text-[#C9967A] leading-none">
+              <div className="text-right flex-shrink-0">
+                <p className="text-white/35 text-xs mb-0.5">×{qty}</p>
+                <p className="font-display text-lg sm:text-xl font-semibold text-[#C9967A] leading-none whitespace-nowrap">
                   PKR {lineTotal().toLocaleString()}
                 </p>
               </div>
@@ -810,7 +810,7 @@ export default function CustomizePage() {
                         initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden' }}>
                         <Card>
-                          <SectionLabel>Position & Scale — {activeSide.charAt(0).toUpperCase() + activeSide.slice(1)}</SectionLabel>
+                          <SectionLabel>Placement — {activeSide.charAt(0).toUpperCase() + activeSide.slice(1)} Side</SectionLabel>
 
                           <div className="mb-4 px-3 py-2 rounded-xl flex items-center gap-2"
                             style={{ background: 'rgba(107,66,38,0.08)', border: '1px solid rgba(107,66,38,0.2)' }}>
@@ -1117,9 +1117,11 @@ function Pill({ children, color, accent }) {
 
 function SummaryRow({ label, value, children }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-white/40 text-sm">{label}</span>
-      {children || <span className="text-white text-sm font-medium">{value}</span>}
+    <div className="flex items-start justify-between gap-4">
+      <span className="text-white/40 text-sm flex-shrink-0">{label}</span>
+      <div className="text-right min-w-0 flex-1">
+        {children || <span className="text-white text-sm font-medium line-clamp-2 text-right">{value}</span>}
+      </div>
     </div>
   );
 }

@@ -220,19 +220,19 @@ export default function ReviewsPage() {
           {/* Aggregate rating display */}
           {avgRating > 0 && (
             <motion.div initial={{ opacity:0, scale:0.96 }} animate={{ opacity:1, scale:1 }} transition={{ delay:0.2 }}
-              className="inline-flex items-center gap-4 mt-8 px-6 py-4 rounded-2xl"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
-              <div>
+              className="inline-flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mt-8 px-6 py-4 rounded-2xl"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', maxWidth: '100%' }}>
+              <div className="text-center sm:text-left">
                 <p className="font-display text-5xl font-bold text-white leading-none">{avgRating.toFixed(1)}</p>
-                <div className="flex items-center gap-1 mt-1.5">
+                <div className="flex items-center justify-center sm:justify-start gap-1 mt-1.5">
                   {[1,2,3,4,5].map(s => (
                     <StarFilled key={s} size={18}
                       color={s <= Math.round(avgRating) ? '#fbbf24' : 'rgba(251,191,36,0.2)'} />
                   ))}
                 </div>
               </div>
-              <div className="w-px h-10 bg-white/10 flex-shrink-0" />
-              <div className="text-left">
+              <div className="hidden sm:block w-px h-10 bg-white/10 flex-shrink-0" />
+              <div className="text-center sm:text-left">
                 <p className="text-white font-bold text-lg">{totalCount.toLocaleString()} Reviews</p>
                 <p className="text-white/40 text-sm">from verified customers</p>
               </div>
@@ -301,9 +301,9 @@ export default function ReviewsPage() {
                   viewport={{ once:true }} transition={{ delay:i*0.06 }}
                   className="rounded-2xl p-4 flex flex-col gap-1"
                   style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)' }}>
-                  <span className="text-lg">{s.icon}</span>
-                  <p className="font-display text-xl font-bold text-white">{s.value}</p>
-                  <p className="text-white/40 text-xs">{s.label}</p>
+                  <span className="text-base">{s.icon}</span>
+                  <p className="font-display text-xl font-bold text-white truncate leading-tight">{s.value}</p>
+                  <p className="text-white/40 text-xs leading-tight">{s.label}</p>
                 </motion.div>
               ))}
             </div>

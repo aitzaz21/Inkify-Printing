@@ -138,8 +138,8 @@ export function ShirtOrderPreview2D({ order, item, onClose }) {
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="space-y-6">
 
-                {/* Shirt previews — side by side */}
-                <div className="grid grid-cols-2 gap-4">
+                {/* Shirt previews — side by side on desktop, stacked on mobile */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <SidePreview
                     label="Front Side"
                     item={item}
@@ -160,7 +160,7 @@ export function ShirtOrderPreview2D({ order, item, onClose }) {
 
                 {/* Download buttons */}
                 {(hasFront || hasBack) && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {hasFront && (
                       <button
                         onClick={() => handleDownload(frontUrl, 'front')}
@@ -192,7 +192,7 @@ export function ShirtOrderPreview2D({ order, item, onClose }) {
                   <div className="rounded-2xl p-4 space-y-3"
                     style={{ background: 'rgba(107,66,38,0.07)', border: '1px solid rgba(107,66,38,0.18)' }}>
                     <p className="text-xs font-semibold tracking-widest uppercase text-[#8B5A3C]">Design Files</p>
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-4">
                       {hasFront && (
                         <div className="flex items-center gap-3">
                           <div className="rounded-xl overflow-hidden flex-shrink-0"

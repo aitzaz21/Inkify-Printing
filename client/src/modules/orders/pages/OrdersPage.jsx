@@ -113,13 +113,13 @@ function OrderCard({ order, review, onReview, index }) {
             </div>
 
             {/* Items */}
-            <p className="text-white/60 text-sm leading-relaxed">
+            <p className="text-white/60 text-sm leading-relaxed line-clamp-2">
               {order.items.map(i => `${i.productName} ×${i.quantity}`).join(' · ')}
             </p>
 
             {/* Payment */}
             <p className="text-white/30 text-xs mt-1.5 capitalize">
-              {order.paymentMethod} · {order.paymentStatus}
+              {order.paymentMethod} · <span className={order.paymentStatus === 'paid' ? 'text-emerald-400/70' : 'text-yellow-400/60'}>{order.paymentStatus}</span>
             </p>
           </div>
 
