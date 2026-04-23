@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../../../shared/api/axios';
 import { Spinner } from '../../../shared/components/Spinner';
-import { SHIRT_TYPE_META } from '../../customize/utils/shirtShapes';
+import { SHIRT_TYPE_META } from '../../customize/utils/shirtTypes';
 
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 const PRESET_COLORS = [

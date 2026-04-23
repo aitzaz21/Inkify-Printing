@@ -14,10 +14,28 @@ const orderItemSchema = new mongoose.Schema({
   designUrl:   { type: String, default: null },
   designId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Design', default: null },
   designNote:  { type: String, default: '' },
-  // Design placement on the 3D model (used for admin preview)
+  // Legacy single-side design transform (kept for backward compat)
   designTransform: {
     x:        { type: Number, default: 0.5 },
-    y:        { type: Number, default: 0.55 },
+    y:        { type: Number, default: 0.5 },
+    scale:    { type: Number, default: 1.0 },
+    rotation: { type: Number, default: 0 },
+  },
+  // Front design (primary print side)
+  frontDesignUrl:  { type: String, default: null },
+  frontDesignId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Design', default: null },
+  frontDesignTransform: {
+    x:        { type: Number, default: 0.5 },
+    y:        { type: Number, default: 0.5 },
+    scale:    { type: Number, default: 1.0 },
+    rotation: { type: Number, default: 0 },
+  },
+  // Back design (optional second print side)
+  backDesignUrl:  { type: String, default: null },
+  backDesignId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Design', default: null },
+  backDesignTransform: {
+    x:        { type: Number, default: 0.5 },
+    y:        { type: Number, default: 0.5 },
     scale:    { type: Number, default: 1.0 },
     rotation: { type: Number, default: 0 },
   },

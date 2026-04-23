@@ -42,11 +42,33 @@ const createOrder = async (userId, body) => {
       designTransform: i.designTransform
         ? {
             x:        Number(i.designTransform.x)        || 0.5,
-            y:        Number(i.designTransform.y)        || 0.55,
+            y:        Number(i.designTransform.y)        || 0.5,
             scale:    Number(i.designTransform.scale)    || 1.0,
             rotation: Number(i.designTransform.rotation) || 0,
           }
-        : { x: 0.5, y: 0.55, scale: 1.0, rotation: 0 },
+        : { x: 0.5, y: 0.5, scale: 1.0, rotation: 0 },
+      // Front design
+      frontDesignUrl:  i.frontDesignUrl  || null,
+      frontDesignId:   i.frontDesignId   || null,
+      frontDesignTransform: i.frontDesignTransform
+        ? {
+            x:        Number(i.frontDesignTransform.x)        || 0.5,
+            y:        Number(i.frontDesignTransform.y)        || 0.5,
+            scale:    Number(i.frontDesignTransform.scale)    || 1.0,
+            rotation: Number(i.frontDesignTransform.rotation) || 0,
+          }
+        : { x: 0.5, y: 0.5, scale: 1.0, rotation: 0 },
+      // Back design
+      backDesignUrl:  i.backDesignUrl  || null,
+      backDesignId:   i.backDesignId   || null,
+      backDesignTransform: i.backDesignTransform
+        ? {
+            x:        Number(i.backDesignTransform.x)        || 0.5,
+            y:        Number(i.backDesignTransform.y)        || 0.5,
+            scale:    Number(i.backDesignTransform.scale)    || 1.0,
+            rotation: Number(i.backDesignTransform.rotation) || 0,
+          }
+        : { x: 0.5, y: 0.5, scale: 1.0, rotation: 0 },
     })),
     subtotal:        Math.round(subtotal * 100) / 100,
     shipping:        Math.round(shipping * 100) / 100,
