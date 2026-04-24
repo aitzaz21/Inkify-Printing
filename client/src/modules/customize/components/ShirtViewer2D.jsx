@@ -1,98 +1,99 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 
-// ─── Canvas constants ─────────────────────────────────────────────────────────
-const VW = 280;
-const VH = 360;
+// ViewBox matches the container's exact 3:4 aspect-ratio — shirt fills the frame
+const VW = 300;
+const VH = 400;
 
-// Print area: chest zone, well inside the body, below the armhole
+// Print area sits squarely on the body panel, well below the armhole
 const PRINT_AREA = {
-  front: { x: 0.308, y: 0.415, w: 0.384, h: 0.370 },
-  back:  { x: 0.308, y: 0.365, w: 0.384, h: 0.410 },
+  front: { x: 0.302, y: 0.390, w: 0.396, h: 0.330 },
+  back:  { x: 0.302, y: 0.345, w: 0.396, h: 0.375 },
 };
 
-const BASE_SIZE = 82;
+const BASE_SIZE = 86;
 
-// ─── Shirt silhouette paths ───────────────────────────────────────────────────
-// Based on a size-M flat-lay: shoulder span ~175 px, sleeve reach ~54 px each,
-// body height ~186 px, collar ring ~80 px wide × 38 px tall.
+// ─── Silhouette paths (size-M flat-lay, 300×400 canvas) ──────────────────────
+//  Shirt occupies x 4..296 (sleeves) and y 38..390 (collar-top to hem).
+//  Body panel: x 70..230, y 140..382.  Collar ring: 88 px wide, 38 px tall.
+//  Each sleeve: 62 px horizontal reach, 46 px cuff opening.
 
 const BODY_CREW =
-  'M 100,50 ' +
-  'C 88,42 68,52 54,64 ' +        // left shoulder: smooth outward-down slope
-  'C 38,72 18,80 8,96 ' +         // sleeve sweeps outward along upper edge
-  'C 2,110 2,126 6,144 ' +        // sleeve outer tip rounds at cuff corner
-  'L 8,156 ' +                    // sleeve outer bottom edge
-  'C 14,164 26,168 44,164 ' +     // cuff band: rounded inner corner
-  'C 56,158 62,146 62,130 ' +     // armhole: concave arc rising to body
-  'L 62,316 ' +                   // left body side seam (straight)
-  'C 62,324 68,330 76,330 ' +     // left hem rounded corner
-  'L 204,330 ' +                  // bottom hem
-  'C 212,330 218,324 218,316 ' +  // right hem rounded corner
-  'L 218,130 ' +                  // right body side seam
-  'C 218,146 224,158 236,164 ' +  // right armhole: concave mirror
-  'C 254,168 266,164 272,156 ' +  // right cuff band inner
-  'L 274,144 ' +                  // right sleeve outer bottom
-  'C 278,126 278,110 272,96 ' +   // right sleeve tip rounds
-  'C 262,80 242,72 226,64 ' +     // right sleeve sweeps inward
-  'C 212,52 192,42 180,50 ' +     // right shoulder slope
-  'C 170,60 156,68 140,68 ' +     // right collar arc
-  'C 124,68 110,60 100,50 Z';     // left collar arc
+  'M 106,60 ' +
+  'C 92,52 70,60 56,72 ' +         // left shoulder slope (S-curve outward-down)
+  'C 40,80 18,90 8,106 ' +         // sleeve upper outer edge sweeps out
+  'C 2,122 2,138 6,156 ' +         // sleeve tip rounds at outer corner
+  'L 8,168 ' +                     // sleeve outer bottom edge
+  'C 16,176 28,180 50,176 ' +      // cuff band: wide inner rounded corner
+  'C 62,170 70,158 70,142 ' +      // armhole: concave arc rising back to body
+  'L 70,374 ' +                    // left body side seam (straight)
+  'C 70,382 76,388 86,388 ' +      // left hem rounded corner
+  'L 214,388 ' +                   // bottom hem
+  'C 224,388 230,382 230,374 ' +   // right hem corner
+  'L 230,142 ' +                   // right body side seam
+  'C 230,158 238,170 250,176 ' +   // right armhole concave mirror
+  'C 272,180 284,176 292,168 ' +   // right cuff inner rounded corner
+  'L 294,156 ' +                   // right sleeve outer bottom
+  'C 298,138 298,122 292,106 ' +   // right sleeve tip rounds
+  'C 282,90 260,80 244,72 ' +      // right sleeve upper outer
+  'C 230,60 208,52 194,60 ' +      // right shoulder slope
+  'C 184,70 170,78 150,78 ' +      // right collar arc
+  'C 130,78 116,70 106,60 Z';      // left collar arc
 
 const BODY_VNECK =
-  'M 100,50 ' +
-  'C 88,42 68,52 54,64 ' +
-  'C 38,72 18,80 8,96 ' +
-  'C 2,110 2,126 6,144 ' +
-  'L 8,156 ' +
-  'C 14,164 26,168 44,164 ' +
-  'C 56,158 62,146 62,130 ' +
-  'L 62,316 ' +
-  'C 62,324 68,330 76,330 ' +
-  'L 204,330 ' +
-  'C 212,330 218,324 218,316 ' +
-  'L 218,130 ' +
-  'C 218,146 224,158 236,164 ' +
-  'C 254,168 266,164 272,156 ' +
-  'L 274,144 ' +
-  'C 278,126 278,110 272,96 ' +
-  'C 262,80 242,72 226,64 ' +
-  'C 212,52 192,42 180,50 ' +
-  'L 140,116 L 100,50 Z';          // V-point replaces collar arc
+  'M 106,60 ' +
+  'C 92,52 70,60 56,72 ' +
+  'C 40,80 18,90 8,106 ' +
+  'C 2,122 2,138 6,156 ' +
+  'L 8,168 ' +
+  'C 16,176 28,180 50,176 ' +
+  'C 62,170 70,158 70,142 ' +
+  'L 70,374 ' +
+  'C 70,382 76,388 86,388 ' +
+  'L 214,388 ' +
+  'C 224,388 230,382 230,374 ' +
+  'L 230,142 ' +
+  'C 230,158 238,170 250,176 ' +
+  'C 272,180 284,176 292,168 ' +
+  'L 294,156 ' +
+  'C 298,138 298,122 292,106 ' +
+  'C 282,90 260,80 244,72 ' +
+  'C 230,60 208,52 194,60 ' +
+  'L 150,124 L 106,60 Z';          // V-point replaces collar arc
 
-// Crew collar band ring — sits above body attachment line
+// Crew collar ring — projects above the body attachment line
 const COLLAR_CREW =
-  'M 100,50 C 110,36 124,30 140,30 C 156,30 170,36 180,50 ' +
-  'C 170,60 156,68 140,68 C 124,68 110,60 100,50 Z';
+  'M 106,60 C 116,44 130,38 150,38 C 170,38 184,44 194,60 ' +
+  'C 184,70 170,78 150,78 C 130,78 116,70 106,60 Z';
 
-// Polo collar — wider, flatter, front-open horseshoe shape
+// Polo collar — wider, flatter open-front band
 const COLLAR_POLO =
-  'M 96,48 C 108,34 124,28 140,28 C 156,28 172,34 184,48 ' +
-  'L 182,60 C 170,50 156,46 140,46 C 124,46 110,50 98,60 Z';
+  'M 102,58 C 114,42 130,36 150,36 C 170,36 186,42 198,58 ' +
+  'L 196,70 C 184,60 168,56 150,56 C 132,56 116,60 104,70 Z';
 
-const POLO_PLACKET = 'M 131,48 L 131,120 L 149,120 L 149,48 Z';
-const POLO_BTNS = [{ cx: 140, cy: 66 }, { cx: 140, cy: 82 }, { cx: 140, cy: 98 }];
+const POLO_PLACKET = 'M 141,58 L 141,128 L 159,128 L 159,58 Z';
+const POLO_BTNS = [{ cx: 150, cy: 76 }, { cx: 150, cy: 94 }, { cx: 150, cy: 112 }];
 
-// Fabric wrinkle / drape paths (match body geometry)
+// Fabric wrinkle paths — anchored at collar, armhole, and lower-body stress points
 const WRINKLES_FRONT = [
-  'M 108,80 C 115,100 113,124 110,140',
-  'M 172,80 C 165,100 167,124 170,140',
-  'M 74,158 C 68,174 66,192 70,210',
-  'M 206,158 C 212,174 214,192 210,210',
-  'M 118,230 C 122,248 120,270 117,285',
-  'M 162,230 C 158,248 160,270 163,285',
-  'M 96,290 C 102,304 100,316 97,325',
-  'M 184,290 C 178,304 180,316 183,325',
+  'M 128,90 C 134,112 132,136 128,154',
+  'M 172,90 C 166,112 168,136 172,154',
+  'M 86,182 C 80,200 78,220 82,238',
+  'M 214,182 C 220,200 222,220 218,238',
+  'M 130,258 C 134,278 132,300 128,318',
+  'M 170,258 C 166,278 168,300 172,318',
+  'M 104,322 C 110,338 108,354 104,368',
+  'M 196,322 C 190,338 192,354 196,368',
 ];
 
 const WRINKLES_BACK = [
-  'M 108,80 C 115,100 113,124 110,140',
-  'M 172,80 C 165,100 167,124 170,140',
-  'M 74,158 C 68,174 66,192 70,210',
-  'M 206,158 C 212,174 214,192 210,210',
-  'M 115,234 C 120,252 118,274 115,290',
-  'M 165,234 C 160,252 162,274 165,290',
-  'M 94,295 C 102,308 100,320 96,330',
-  'M 186,295 C 178,308 180,320 184,330',
+  'M 128,90 C 134,112 132,136 128,154',
+  'M 172,90 C 166,112 168,136 172,154',
+  'M 86,182 C 80,200 78,222 82,240',
+  'M 214,182 C 220,200 222,222 218,240',
+  'M 128,262 C 132,284 130,308 126,324',
+  'M 172,262 C 168,284 170,308 174,324',
+  'M 102,328 C 108,346 106,362 102,376',
+  'M 198,328 C 192,346 194,362 198,376',
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -111,19 +112,15 @@ function getShirtDef(typeId, side) {
 }
 
 function darken(hex, amt) {
-  const full   = hex.replace('#', '');
-  const padded = full.length === 3 ? full.split('').map(c => c + c).join('') : full;
-  const n = parseInt(padded, 16) || 0;
-  const r = Math.max(0, Math.min(255, (n >> 16) + amt));
-  const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
-  const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
-  return `rgb(${r},${g},${b})`;
+  const f = hex.replace('#', '');
+  const p = f.length === 3 ? f.split('').map(c => c + c).join('') : f;
+  const n = parseInt(p, 16) || 0;
+  return `rgb(${Math.max(0, Math.min(255, (n >> 16) + amt))},${Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt))},${Math.max(0, Math.min(255, (n & 0xff) + amt))})`;
 }
-
 function getLum(hex) {
-  const full = hex.replace('#', '');
-  const pad  = full.length === 3 ? full.split('').map(c => c + c).join('') : full;
-  const n    = parseInt(pad, 16) || 0;
+  const f = hex.replace('#', '');
+  const p = f.length === 3 ? f.split('').map(c => c + c).join('') : f;
+  const n = parseInt(p, 16) || 0;
   return (n >> 16) * 0.299 + ((n >> 8) & 0xff) * 0.587 + (n & 0xff) * 0.114;
 }
 
@@ -152,9 +149,9 @@ export function ShirtViewer2D({
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => {
-      setDim({ w: e.contentRect.width, h: e.contentRect.height });
-    });
+    const ro = new ResizeObserver(([e]) =>
+      setDim({ w: e.contentRect.width, h: e.contentRect.height })
+    );
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -173,39 +170,38 @@ export function ShirtViewer2D({
   const pTop  = oy + pa.y * VH * sf;
   const pW    = pa.w * VW * sf;
   const pH    = pa.h * VH * sf;
-
   const dLeft = pLeft + designX * pW;
   const dTop  = pTop  + designY * pH;
   const dSize = BASE_SIZE * sf * designScale;
 
-  const startDrag = useCallback((clientX, clientY) => {
+  const startDrag = useCallback((cx, cy) => {
     if (!onDesignMove) return;
     dragging.current = true;
-    drag0.current = { mx: clientX, my: clientY, dx: designX, dy: designY };
+    drag0.current = { mx: cx, my: cy, dx: designX, dy: designY };
   }, [onDesignMove, designX, designY]);
 
-  const moveDrag = useCallback((clientX, clientY) => {
+  const moveDrag = useCallback((cx, cy) => {
     if (!dragging.current || !onDesignMove) return;
-    const nx = Math.max(0, Math.min(1, drag0.current.dx + (clientX - drag0.current.mx) / pW));
-    const ny = Math.max(0, Math.min(1, drag0.current.dy + (clientY - drag0.current.my) / pH));
-    onDesignMove(nx, ny);
+    onDesignMove(
+      Math.max(0, Math.min(1, drag0.current.dx + (cx - drag0.current.mx) / pW)),
+      Math.max(0, Math.min(1, drag0.current.dy + (cy - drag0.current.my) / pH))
+    );
   }, [onDesignMove, pW, pH]);
 
   const endDrag = useCallback(() => { dragging.current = false; }, []);
 
-  const startResize = useCallback((clientX, sign) => {
+  const startResize = useCallback((cx, sign) => {
     if (!onDesignResize) return;
     resizing.current = true;
-    resize0.current = { mx: clientX, initScale: designScale, initHalfW: dSize / 2, sign };
+    resize0.current = { mx: cx, initScale: designScale, initHalfW: dSize / 2, sign };
   }, [onDesignResize, designScale, dSize]);
 
-  const moveResize = useCallback((clientX) => {
+  const moveResize = useCallback((cx) => {
     if (!resizing.current || !onDesignResize) return;
     const { mx, initScale, initHalfW, sign } = resize0.current;
-    const delta = (clientX - mx) * sign;
-    const newHalfW = initHalfW + delta;
-    if (newHalfW < 10) return;
-    onDesignResize(Math.max(0.3, Math.min(2.5, initScale * newHalfW / initHalfW)));
+    const hw = initHalfW + (cx - mx) * sign;
+    if (hw < 10) return;
+    onDesignResize(Math.max(0.3, Math.min(2.5, initScale * hw / initHalfW)));
   }, [onDesignResize]);
 
   const endResize = useCallback(() => { resizing.current = false; }, []);
@@ -214,455 +210,472 @@ export function ShirtViewer2D({
     const mm = (e) => { moveDrag(e.clientX, e.clientY); moveResize(e.clientX); };
     const mu = () => { endDrag(); endResize(); };
     window.addEventListener('mousemove', mm);
-    window.addEventListener('mouseup', mu);
+    window.addEventListener('mouseup',  mu);
     return () => { window.removeEventListener('mousemove', mm); window.removeEventListener('mouseup', mu); };
   }, [moveDrag, endDrag, moveResize, endResize]);
 
-  // ─── Derived visual values ────────────────────────────────────────────────
+  // ── Visual constants ────────────────────────────────────────────────────────
   const { body, collar, polo } = getShirtDef(typeId, side);
-  const uid      = `sv2d-${typeId.replace(/-/g, '')}-${side}`;
-  const lum      = getLum(color);
-  const isLight  = lum > 148;
-  const darkCol  = darken(color, -38);
-  const darkCol2 = darken(color, -20);
+  const uid     = `sv-${typeId.replace(/-/g, '')}-${side}`;
+  const lum     = getLum(color);
+  const isLight = lum > 148;
+  const darkCol  = darken(color, -40);
+  const darkCol2 = darken(color, -22);
   const wrinkles = side === 'back' ? WRINKLES_BACK : WRINKLES_FRONT;
-
-  // Adaptive stroke colours based on shirt brightness
-  const seamOpacity    = isLight ? 0.11 : 0.06;
-  const wrinkleOpacity = isLight ? 0.06 : 0.035;
-  const outlineOpacity = isLight ? 0.28 : 0.14;
-  const seamColor    = isLight ? `rgba(0,0,0,${seamOpacity})`    : `rgba(255,255,255,${seamOpacity})`;
-  const wrinkleColor = isLight ? `rgba(0,0,0,${wrinkleOpacity})` : `rgba(255,255,255,${wrinkleOpacity})`;
-  const outlineColor = isLight ? `rgba(0,0,0,${outlineOpacity})` : `rgba(255,255,255,${outlineOpacity})`;
+  const sc = isLight ? 'rgba(0,0,0,' : 'rgba(255,255,255,';
+  const seamC    = `${sc}${isLight ? 0.10 : 0.06})`;
+  const wrinkleC = `${sc}${isLight ? 0.06 : 0.035})`;
+  const outlineC = `${sc}${isLight ? 0.30 : 0.15})`;
 
   return (
     <div ref={wrapRef} style={{ position: 'relative', width: '100%', height: '100%', userSelect: 'none' }}>
 
-      {/* ── Soft ground shadow ──────────────────────────────────────────────── */}
+      {/* Ground ellipse shadow */}
       <div style={{
         position: 'absolute', bottom: `${oy}px`, left: '50%',
         transform: 'translateX(-50%)',
-        width: `${sw * 0.58}px`, height: '20px',
-        borderRadius: '50%',
-        background: 'radial-gradient(ellipse, rgba(0,0,0,0.50) 0%, transparent 70%)',
+        width: `${sw * 0.60}px`, height: '22px', borderRadius: '50%',
+        background: 'radial-gradient(ellipse, rgba(0,0,0,0.55) 0%, transparent 70%)',
         pointerEvents: 'none', zIndex: 0,
-      }} />
+      }}/>
 
-      {/* ── Main SVG ─────────────────────────────────────────────────────────── */}
-      <svg
-        viewBox={`0 0 ${VW} ${VH}`}
-        xmlns="http://www.w3.org/2000/svg"
-        style={{ position: 'absolute', left: ox, top: oy, width: sw, height: sh, display: 'block', zIndex: 1, overflow: 'visible' }}
-      >
+      {/* ════════════════════════════════════════════════════════════════════════
+          MAIN SVG  (300 × 400 viewBox — matches container 3:4 aspect ratio)
+          ════════════════════════════════════════════════════════════════════ */}
+      <svg viewBox={`0 0 ${VW} ${VH}`} xmlns="http://www.w3.org/2000/svg"
+        style={{ position: 'absolute', left: ox, top: oy, width: sw, height: sh,
+                 display: 'block', zIndex: 1, overflow: 'visible' }}>
         <defs>
-          {/* ── Drop shadow filter for entire shirt ── */}
-          <filter id={`${uid}-drop`} x="-8%" y="-4%" width="116%" height="116%">
-            <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.55"/>
+          {/* ── Drop-shadow filter for the whole shirt ── */}
+          <filter id={`${uid}-drop`} x="-10%" y="-5%" width="120%" height="118%">
+            <feDropShadow dx="0" dy="5" stdDeviation="8" floodColor="#000" floodOpacity="0.60"/>
           </filter>
 
-          {/* ── Fabric noise / cotton weave texture ── */}
-          <filter id={`${uid}-fab`} x="-2%" y="-2%" width="104%" height="104%" colorInterpolationFilters="sRGB">
-            <feTurbulence type="fractalNoise" baseFrequency="0.72 0.62" numOctaves="4" seed="14" result="noise"/>
+          {/* ── Fabric turbulence (woven-cotton appearance) ── */}
+          <filter id={`${uid}-fab`} x="-2%" y="-2%" width="104%" height="104%"
+            colorInterpolationFilters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.68 0.58" numOctaves="4"
+              seed="19" result="noise"/>
             <feColorMatrix in="noise" type="saturate" values="0" result="gray"/>
-            <feBlend in="SourceGraphic" in2="gray" mode="multiply" result="blended"/>
-            <feComposite in="blended" in2="SourceGraphic" operator="in"/>
+            <feBlend in="SourceGraphic" in2="gray" mode="multiply" result="blnd"/>
+            <feComposite in="blnd" in2="SourceGraphic" operator="in"/>
           </filter>
 
-          {/* ── Subtle displacement for fabric surface irregularity ── */}
+          {/* ── Micro-displacement for surface irregularity ── */}
           <filter id={`${uid}-disp`} x="-2%" y="-2%" width="104%" height="104%">
-            <feTurbulence type="turbulence" baseFrequency="0.04 0.03" numOctaves="3" seed="5" result="turb"/>
-            <feDisplacementMap in="SourceGraphic" in2="turb" scale="1.8" xChannelSelector="R" yChannelSelector="G"/>
+            <feTurbulence type="turbulence" baseFrequency="0.035 0.028"
+              numOctaves="3" seed="7" result="t"/>
+            <feDisplacementMap in="SourceGraphic" in2="t" scale="2.2"
+              xChannelSelector="R" yChannelSelector="G"/>
           </filter>
 
-          {/* ── Collar ribbing pattern ── */}
-          <pattern id={`${uid}-rib`} x="0" y="0" width={VW} height="2.8" patternUnits="userSpaceOnUse">
-            <rect width={VW} height="1.4" fill="rgba(0,0,0,0.10)"/>
+          {/* ── Collar rib knit pattern ── */}
+          <pattern id={`${uid}-rib`} x="0" y="0" width={VW} height="3"
+            patternUnits="userSpaceOnUse">
+            <rect width={VW} height="1.5" fill="rgba(0,0,0,0.10)"/>
           </pattern>
 
-          {/* ── Cotton weave grid pattern ── */}
-          <pattern id={`${uid}-cotton`} x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
-            <rect width="4" height="4" fill="none"/>
-            <rect width="4" height="2" fill="rgba(0,0,0,0.030)"/>
-            <rect width="2" height="4" fill="rgba(0,0,0,0.020)"/>
+          {/* ── Woven cotton grid ── */}
+          <pattern id={`${uid}-wv`} x="0" y="0" width="4.5" height="4.5"
+            patternUnits="userSpaceOnUse">
+            <rect width="4.5" height="4.5" fill="none"/>
+            <rect width="4.5" height="2.25" fill="rgba(0,0,0,0.028)"/>
+            <rect width="2.25" height="4.5" fill="rgba(0,0,0,0.018)"/>
           </pattern>
 
           {/* ── Clip paths ── */}
           <clipPath id={`${uid}-clip`}><path d={body}/></clipPath>
           {collar && <clipPath id={`${uid}-cclip`}><path d={collar}/></clipPath>}
 
-          {/* ── Gradients ── */}
+          {/* ══ Gradients ══════════════════════════════════════════════════════ */}
 
-          {/* Left-to-right edge darkening */}
-          <linearGradient id={`${uid}-sides`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={VW} y2="0">
-            <stop offset="0%"   stopColor="#000" stopOpacity="0.42"/>
-            <stop offset="10%"  stopColor="#000" stopOpacity="0.12"/>
-            <stop offset="30%"  stopColor="#fff" stopOpacity="0.08"/>
-            <stop offset="50%"  stopColor="#fff" stopOpacity="0.04"/>
-            <stop offset="70%"  stopColor="#fff" stopOpacity="0.08"/>
-            <stop offset="90%"  stopColor="#000" stopOpacity="0.12"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.40"/>
+          {/* Side vignette — darkens left & right edges strongly */}
+          <linearGradient id={`${uid}-sides`} gradientUnits="userSpaceOnUse"
+            x1="0" y1="0" x2={VW} y2="0">
+            <stop offset="0%"   stopColor="#000" stopOpacity="0.48"/>
+            <stop offset="10%"  stopColor="#000" stopOpacity="0.14"/>
+            <stop offset="28%"  stopColor="#fff" stopOpacity="0.07"/>
+            <stop offset="50%"  stopColor="#fff" stopOpacity="0.03"/>
+            <stop offset="72%"  stopColor="#fff" stopOpacity="0.07"/>
+            <stop offset="90%"  stopColor="#000" stopOpacity="0.14"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.46"/>
           </linearGradient>
 
-          {/* Top-to-bottom shading */}
-          <linearGradient id={`${uid}-topbot`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={VH}>
-            <stop offset="0%"   stopColor="#fff" stopOpacity="0.22"/>
-            <stop offset="15%"  stopColor="#fff" stopOpacity="0.08"/>
-            <stop offset="45%"  stopColor="#000" stopOpacity="0.00"/>
-            <stop offset="78%"  stopColor="#000" stopOpacity="0.10"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.28"/>
-          </linearGradient>
-
-          {/* Center-chest radial highlight (main light source) */}
-          <radialGradient id={`${uid}-chest`} gradientUnits="userSpaceOnUse" cx="140" cy="195" r="145">
-            <stop offset="0%"   stopColor="#fff" stopOpacity="0.22"/>
-            <stop offset="35%"  stopColor="#fff" stopOpacity="0.06"/>
-            <stop offset="70%"  stopColor="#000" stopOpacity="0.04"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.16"/>
-          </radialGradient>
-
-          {/* Strong edge vignette — most important for 3D realism */}
-          <radialGradient id={`${uid}-vign`} gradientUnits="userSpaceOnUse" cx="140" cy="195" r="175">
-            <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
-            <stop offset="55%"  stopColor="#000" stopOpacity="0.04"/>
-            <stop offset="80%"  stopColor="#000" stopOpacity="0.22"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.52"/>
-          </radialGradient>
-
-          {/* Shoulder area specular (upper-front light) */}
-          <radialGradient id={`${uid}-shoulder`} gradientUnits="userSpaceOnUse" cx="140" cy="50" r="180">
+          {/* Top-to-bottom lighting */}
+          <linearGradient id={`${uid}-topbot`} gradientUnits="userSpaceOnUse"
+            x1="0" y1="0" x2="0" y2={VH}>
             <stop offset="0%"   stopColor="#fff" stopOpacity="0.24"/>
-            <stop offset="40%"  stopColor="#fff" stopOpacity="0.07"/>
+            <stop offset="14%"  stopColor="#fff" stopOpacity="0.09"/>
+            <stop offset="42%"  stopColor="#000" stopOpacity="0.00"/>
+            <stop offset="76%"  stopColor="#000" stopOpacity="0.10"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.30"/>
+          </linearGradient>
+
+          {/* Center-chest radial highlight (primary light source) */}
+          <radialGradient id={`${uid}-chest`} gradientUnits="userSpaceOnUse"
+            cx="150" cy="248" r="168">
+            <stop offset="0%"   stopColor="#fff" stopOpacity="0.24"/>
+            <stop offset="30%"  stopColor="#fff" stopOpacity="0.07"/>
+            <stop offset="65%"  stopColor="#000" stopOpacity="0.04"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.18"/>
+          </radialGradient>
+
+          {/* Strong radial edge vignette — primary depth cue */}
+          <radialGradient id={`${uid}-vign`} gradientUnits="userSpaceOnUse"
+            cx="150" cy="240" r="210">
+            <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
+            <stop offset="50%"  stopColor="#000" stopOpacity="0.03"/>
+            <stop offset="75%"  stopColor="#000" stopOpacity="0.22"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.58"/>
+          </radialGradient>
+
+          {/* Shoulder/collar specular (upper-front key light) */}
+          <radialGradient id={`${uid}-key`} gradientUnits="userSpaceOnUse"
+            cx="150" cy="60" r="210">
+            <stop offset="0%"   stopColor="#fff" stopOpacity="0.26"/>
+            <stop offset="38%"  stopColor="#fff" stopOpacity="0.07"/>
             <stop offset="100%" stopColor="#fff" stopOpacity="0.00"/>
           </radialGradient>
 
-          {/* Left sleeve outer shadow */}
-          <linearGradient id={`${uid}-stl`} gradientUnits="userSpaceOnUse" x1="62" y1="0" x2="0" y2="0">
+          {/* Left sleeve outer shadow gradient */}
+          <linearGradient id={`${uid}-stl`} gradientUnits="userSpaceOnUse"
+            x1="72" y1="0" x2="0" y2="0">
             <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
-            <stop offset="60%"  stopColor="#000" stopOpacity="0.18"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.42"/>
+            <stop offset="55%"  stopColor="#000" stopOpacity="0.18"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.46"/>
           </linearGradient>
 
-          {/* Right sleeve outer shadow */}
-          <linearGradient id={`${uid}-str`} gradientUnits="userSpaceOnUse" x1="218" y1="0" x2={VW} y2="0">
+          {/* Right sleeve outer shadow gradient */}
+          <linearGradient id={`${uid}-str`} gradientUnits="userSpaceOnUse"
+            x1="228" y1="0" x2={VW} y2="0">
             <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
-            <stop offset="60%"  stopColor="#000" stopOpacity="0.18"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.42"/>
+            <stop offset="55%"  stopColor="#000" stopOpacity="0.18"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.46"/>
           </linearGradient>
 
-          {/* Collar cast-shadow onto chest — thin gradient strip */}
-          <linearGradient id={`${uid}-colshadow`} gradientUnits="userSpaceOnUse" x1="0" y1="68" x2="0" y2="108">
-            <stop offset="0%"   stopColor="#000" stopOpacity="0.28"/>
+          {/* Sleeve panel ambient (sleeves face slightly away from camera) */}
+          <linearGradient id={`${uid}-slvL`} gradientUnits="userSpaceOnUse"
+            x1="72" y1="0" x2="0" y2="0">
+            <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.16"/>
+          </linearGradient>
+          <linearGradient id={`${uid}-slvR`} gradientUnits="userSpaceOnUse"
+            x1="228" y1="0" x2={VW} y2="0">
+            <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.16"/>
+          </linearGradient>
+
+          {/* Side-seam groove shadow (seam ridge dips below fabric surface) */}
+          <linearGradient id={`${uid}-smL`} gradientUnits="userSpaceOnUse"
+            x1="62" y1="0" x2="80" y2="0">
+            <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
+            <stop offset="50%"  stopColor="#000" stopOpacity="0.22"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.00"/>
+          </linearGradient>
+          <linearGradient id={`${uid}-smR`} gradientUnits="userSpaceOnUse"
+            x1="220" y1="0" x2="238" y2="0">
+            <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
+            <stop offset="50%"  stopColor="#000" stopOpacity="0.22"/>
             <stop offset="100%" stopColor="#000" stopOpacity="0.00"/>
           </linearGradient>
 
-          {/* Hem fold shadow — darker at very bottom */}
-          <linearGradient id={`${uid}-hem`} gradientUnits="userSpaceOnUse" x1="0" y1="310" x2="0" y2="330">
+          {/* Underarm fold — fabric bunches where sleeve meets body */}
+          <radialGradient id={`${uid}-uaL`} gradientUnits="userSpaceOnUse"
+            cx="70" cy="168" r="28">
+            <stop offset="0%"   stopColor="#000" stopOpacity="0.36"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.00"/>
+          </radialGradient>
+          <radialGradient id={`${uid}-uaR`} gradientUnits="userSpaceOnUse"
+            cx="230" cy="168" r="28">
+            <stop offset="0%"   stopColor="#000" stopOpacity="0.36"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.00"/>
+          </radialGradient>
+
+          {/* Collar cast-shadow strip on chest */}
+          <linearGradient id={`${uid}-csh`} gradientUnits="userSpaceOnUse"
+            x1="0" y1="78" x2="0" y2="122">
+            <stop offset="0%"   stopColor="#000" stopOpacity="0.30"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.00"/>
+          </linearGradient>
+
+          {/* Hem fold shadow */}
+          <linearGradient id={`${uid}-hem`} gradientUnits="userSpaceOnUse"
+            x1="0" y1="365" x2="0" y2="388">
+            <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.26"/>
+          </linearGradient>
+
+          {/* Cuff fold shadow */}
+          <linearGradient id={`${uid}-cuf`} gradientUnits="userSpaceOnUse"
+            x1="0" y1="160" x2="0" y2="182">
             <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
             <stop offset="100%" stopColor="#000" stopOpacity="0.22"/>
           </linearGradient>
-
-          {/* Cuff-edge shadow gradient (bottom of each sleeve) */}
-          <linearGradient id={`${uid}-cuffl`} gradientUnits="userSpaceOnUse" x1="0" y1="148" x2="0" y2="170">
-            <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.20"/>
-          </linearGradient>
-
-          {/* Sleeve-panel ambient darkening — sleeves sit slightly away from light */}
-          <linearGradient id={`${uid}-sleeveL`} gradientUnits="userSpaceOnUse" x1="64" y1="0" x2="0" y2="0">
-            <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.14"/>
-          </linearGradient>
-          <linearGradient id={`${uid}-sleeveR`} gradientUnits="userSpaceOnUse" x1="216" y1="0" x2={VW} y2="0">
-            <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.14"/>
-          </linearGradient>
-
-          {/* Side-seam inner-groove shadow (seam ridge catches less light) */}
-          <linearGradient id={`${uid}-seamL`} gradientUnits="userSpaceOnUse" x1="56" y1="0" x2="72" y2="0">
-            <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
-            <stop offset="50%"  stopColor="#000" stopOpacity="0.20"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.00"/>
-          </linearGradient>
-          <linearGradient id={`${uid}-seamR`} gradientUnits="userSpaceOnUse" x1="208" y1="0" x2="224" y2="0">
-            <stop offset="0%"   stopColor="#000" stopOpacity="0.00"/>
-            <stop offset="50%"  stopColor="#000" stopOpacity="0.20"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.00"/>
-          </linearGradient>
-
-          {/* Underarm fold shadow — fabric tension crease below sleeve junction */}
-          <radialGradient id={`${uid}-underL`} gradientUnits="userSpaceOnUse" cx="62" cy="156" r="22">
-            <stop offset="0%"   stopColor="#000" stopOpacity="0.32"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.00"/>
-          </radialGradient>
-          <radialGradient id={`${uid}-underR`} gradientUnits="userSpaceOnUse" cx="218" cy="156" r="22">
-            <stop offset="0%"   stopColor="#000" stopOpacity="0.32"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.00"/>
-          </radialGradient>
         </defs>
 
-        {/* ══ LAYER 1 — Base fill with drop shadow ══════════════════════════════ */}
+        {/* ══════════════════════════════════════════════════════════════════════
+            PAINT LAYERS  (bottom → top)
+            ══════════════════════════════════════════════════════════════════ */}
+
+        {/* 1 ─ Base fill + realistic drop-shadow */}
         <path d={body} fill={color} filter={`url(#${uid}-drop)`}/>
 
-        {/* ══ LAYER 2 — Cotton weave texture ════════════════════════════════════ */}
-        <path d={body} fill={`url(#${uid}-cotton)`} opacity={isLight ? '1' : '0.55'}/>
+        {/* 2 ─ Woven cotton grid texture */}
+        <path d={body} fill={`url(#${uid}-wv)`} opacity={isLight ? '1' : '0.6'}/>
 
-        {/* ══ LAYER 3 — Fabric noise (woven-cotton look) ════════════════════════ */}
-        <path d={body} fill={color} opacity="0.30" filter={`url(#${uid}-fab)`}/>
+        {/* 3 ─ Fabric noise (fractal cotton weave) */}
+        <path d={body} fill={color} opacity="0.32" filter={`url(#${uid}-fab)`}/>
 
-        {/* ══ LAYER 4 — Primary shading gradients ═══════════════════════════════ */}
-        {/* Side-to-side edge darkening */}
-        <rect x="0" y="0" width={VW} height={VH} fill={`url(#${uid}-sides)`}    clipPath={`url(#${uid}-clip)`}/>
-        {/* Top-to-bottom tone */}
-        <rect x="0" y="0" width={VW} height={VH} fill={`url(#${uid}-topbot)`}   clipPath={`url(#${uid}-clip)`}/>
-        {/* Center-chest highlight */}
-        <rect x="0" y="0" width={VW} height={VH} fill={`url(#${uid}-chest)`}    clipPath={`url(#${uid}-clip)`}/>
-        {/* Shoulder specular */}
-        <rect x="0" y="0" width={VW} height="150" fill={`url(#${uid}-shoulder)`} clipPath={`url(#${uid}-clip)`}/>
+        {/* 4 ─ Primary lighting gradients */}
+        <rect x="0" y="0" width={VW} height={VH}
+          fill={`url(#${uid}-sides)`}  clipPath={`url(#${uid}-clip)`}/>
+        <rect x="0" y="0" width={VW} height={VH}
+          fill={`url(#${uid}-topbot)`} clipPath={`url(#${uid}-clip)`}/>
+        <rect x="0" y="0" width={VW} height={VH}
+          fill={`url(#${uid}-chest)`}  clipPath={`url(#${uid}-clip)`}/>
+        <rect x="0" y="0" width={VW} height="160"
+          fill={`url(#${uid}-key)`}    clipPath={`url(#${uid}-clip)`}/>
 
-        {/* ══ LAYER 5 — Strong edge vignette (makes fabric look 3D) ════════════ */}
-        <rect x="0" y="0" width={VW} height={VH} fill={`url(#${uid}-vign)`} clipPath={`url(#${uid}-clip)`}/>
+        {/* 5 ─ Radial edge vignette — most important depth cue */}
+        <rect x="0" y="0" width={VW} height={VH}
+          fill={`url(#${uid}-vign)`} clipPath={`url(#${uid}-clip)`}/>
 
-        {/* ══ LAYER 6 — Sleeve panel ambient shading ════════════════════════════ */}
-        {/* Sleeves are angled away from the main light — slightly darker */}
-        <rect x="0"   y="44" width="66" height="128" fill={`url(#${uid}-sleeveL)`} clipPath={`url(#${uid}-clip)`}/>
-        <rect x="214" y="44" width="66" height="128" fill={`url(#${uid}-sleeveR)`} clipPath={`url(#${uid}-clip)`}/>
+        {/* 6 ─ Sleeve panel ambient shading (sleeves tilt away from light) */}
+        <rect x="0"   y="50" width="74" height="138"
+          fill={`url(#${uid}-slvL)`} clipPath={`url(#${uid}-clip)`}/>
+        <rect x="226" y="50" width="74" height="138"
+          fill={`url(#${uid}-slvR)`} clipPath={`url(#${uid}-clip)`}/>
 
-        {/* ══ LAYER 7 — Sleeve outer-edge deep shadows ══════════════════════════ */}
-        <rect x="0"   y="58" width="66" height="112" fill={`url(#${uid}-stl)`} clipPath={`url(#${uid}-clip)`}/>
-        <rect x="214" y="58" width="66" height="112" fill={`url(#${uid}-str)`} clipPath={`url(#${uid}-clip)`}/>
+        {/* 7 ─ Sleeve outer-edge deep shadow */}
+        <rect x="0"   y="62" width="74" height="122"
+          fill={`url(#${uid}-stl)`} clipPath={`url(#${uid}-clip)`}/>
+        <rect x="226" y="62" width="74" height="122"
+          fill={`url(#${uid}-str)`} clipPath={`url(#${uid}-clip)`}/>
 
-        {/* ══ LAYER 8 — Sleeve cuff-hem fold shadow ═════════════════════════════ */}
-        <rect x="0" y="148" width={VW} height="22" fill={`url(#${uid}-cuffl)`} clipPath={`url(#${uid}-clip)`}/>
+        {/* 8 ─ Cuff-fold shadow */}
+        <rect x="0" y="160" width={VW} height="22"
+          fill={`url(#${uid}-cuf)`} clipPath={`url(#${uid}-clip)`}/>
 
-        {/* ══ LAYER 9 — Armhole concave depth shadows ═══════════════════════════ */}
-        <ellipse cx="62"  cy="148" rx="30" ry="26" fill="rgba(0,0,0,0.30)" clipPath={`url(#${uid}-clip)`}/>
-        <ellipse cx="218" cy="148" rx="30" ry="26" fill="rgba(0,0,0,0.30)" clipPath={`url(#${uid}-clip)`}/>
-        <ellipse cx="62"  cy="144" rx="15" ry="13" fill="rgba(0,0,0,0.20)" clipPath={`url(#${uid}-clip)`}/>
-        <ellipse cx="218" cy="144" rx="15" ry="13" fill="rgba(0,0,0,0.20)" clipPath={`url(#${uid}-clip)`}/>
+        {/* 9 ─ Armhole concave depth shadow (double ellipse) */}
+        <ellipse cx="70"  cy="160" rx="32" ry="28" fill="rgba(0,0,0,0.32)" clipPath={`url(#${uid}-clip)`}/>
+        <ellipse cx="230" cy="160" rx="32" ry="28" fill="rgba(0,0,0,0.32)" clipPath={`url(#${uid}-clip)`}/>
+        <ellipse cx="70"  cy="156" rx="16" ry="14" fill="rgba(0,0,0,0.22)" clipPath={`url(#${uid}-clip)`}/>
+        <ellipse cx="230" cy="156" rx="16" ry="14" fill="rgba(0,0,0,0.22)" clipPath={`url(#${uid}-clip)`}/>
 
-        {/* ══ LAYER 10 — Underarm fold crease (fabric tension below junction) ══ */}
-        <rect x="0" y="130" width={VW} height="50"
-          fill={`url(#${uid}-underL)`} clipPath={`url(#${uid}-clip)`}/>
-        <rect x="0" y="130" width={VW} height="50"
-          fill={`url(#${uid}-underR)`} clipPath={`url(#${uid}-clip)`}/>
+        {/* 10 ─ Underarm fold crease */}
+        <rect x="0" y="140" width={VW} height="58"
+          fill={`url(#${uid}-uaL)`} clipPath={`url(#${uid}-clip)`}/>
+        <rect x="0" y="140" width={VW} height="58"
+          fill={`url(#${uid}-uaR)`} clipPath={`url(#${uid}-clip)`}/>
 
-        {/* ══ LAYER 11 — Side-seam groove shadows ═══════════════════════════════ */}
-        {/* Creates the illusion that the seam is a 3D ridge */}
-        <rect x="56"  y="126" width="16" height="194" fill={`url(#${uid}-seamL)`} clipPath={`url(#${uid}-clip)`}/>
-        <rect x="208" y="126" width="16" height="194" fill={`url(#${uid}-seamR)`} clipPath={`url(#${uid}-clip)`}/>
+        {/* 11 ─ Side-seam groove */}
+        <rect x="62"  y="140" width="18" height="238" fill={`url(#${uid}-smL)`} clipPath={`url(#${uid}-clip)`}/>
+        <rect x="220" y="140" width="18" height="238" fill={`url(#${uid}-smR)`} clipPath={`url(#${uid}-clip)`}/>
 
-        {/* ══ LAYER 12 — Shoulder-cap crease ════════════════════════════════════ */}
-        {/* Shadow fold where sleeve cap seam is visible on the shoulder */}
-        <path d="M 86,66 C 74,78 62,92 56,108"
-          fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="4" strokeLinecap="round"
+        {/* 12 ─ Shoulder-cap crease line (shadow + highlight pair) */}
+        <path d="M 92,76 C 80,90 68,106 62,124"
+          fill="none" stroke="rgba(0,0,0,0.20)" strokeWidth="5" strokeLinecap="round"
           clipPath={`url(#${uid}-clip)`}/>
-        <path d="M 194,66 C 206,78 218,92 224,108"
-          fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="4" strokeLinecap="round"
+        <path d="M 208,76 C 220,90 232,106 238,124"
+          fill="none" stroke="rgba(0,0,0,0.20)" strokeWidth="5" strokeLinecap="round"
           clipPath={`url(#${uid}-clip)`}/>
-        {/* Highlight on the shoulder cap ridge (opposite side of shadow) */}
-        <path d="M 84,65 C 72,77 60,91 54,107"
+        <path d="M 90,74 C 78,88 66,104 60,122"
           fill="none"
-          stroke={isLight ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.12)'}
-          strokeWidth="1.2" strokeLinecap="round"
+          stroke={isLight ? 'rgba(255,255,255,0.40)' : 'rgba(255,255,255,0.14)'}
+          strokeWidth="1.4" strokeLinecap="round"
           clipPath={`url(#${uid}-clip)`}/>
-        <path d="M 196,65 C 208,77 220,91 226,107"
+        <path d="M 210,74 C 222,88 234,104 240,122"
           fill="none"
-          stroke={isLight ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.12)'}
-          strokeWidth="1.2" strokeLinecap="round"
+          stroke={isLight ? 'rgba(255,255,255,0.40)' : 'rgba(255,255,255,0.14)'}
+          strokeWidth="1.4" strokeLinecap="round"
           clipPath={`url(#${uid}-clip)`}/>
 
-        {/* ══ LAYER 13 — Collar shadow cast on the chest ════════════════════════ */}
-        <rect x="62" y="68" width="156" height="42" fill={`url(#${uid}-colshadow)`} clipPath={`url(#${uid}-clip)`}/>
+        {/* 13 ─ Collar cast-shadow on chest */}
+        <rect x="70" y="78" width="160" height="44"
+          fill={`url(#${uid}-csh)`} clipPath={`url(#${uid}-clip)`}/>
 
-        {/* ══ LAYER 14 — Hem fold shadow ════════════════════════════════════════ */}
-        <rect x="62" y="310" width="156" height="20" fill={`url(#${uid}-hem)`} clipPath={`url(#${uid}-clip)`}/>
+        {/* 14 ─ Hem fold shadow */}
+        <rect x="70" y="365" width="160" height="23"
+          fill={`url(#${uid}-hem)`} clipPath={`url(#${uid}-clip)`}/>
 
-        {/* ══ LAYER 15 — Inner-edge fabric thickness shadow (3D rim) ═══════════ */}
-        <path d={body} fill="none" stroke="rgba(0,0,0,0.24)" strokeWidth="14"
+        {/* 15 ─ Inner-rim fabric-thickness shadow (gives 3D edge) */}
+        <path d={body} fill="none" stroke="rgba(0,0,0,0.26)" strokeWidth="16"
           strokeLinejoin="round" clipPath={`url(#${uid}-clip)`}/>
 
-        {/* ══ LAYER 16 — Surface-displacement micro-texture ═════════════════════ */}
-        <path d={body} fill={color} opacity="0.09" filter={`url(#${uid}-disp)`}/>
+        {/* 16 ─ Micro surface displacement */}
+        <path d={body} fill={color} opacity="0.10" filter={`url(#${uid}-disp)`}/>
 
-        {/* ══ LAYER 17 — Fabric drape / wrinkle lines ══════════════════════════ */}
-        <g fill="none" stroke={wrinkleColor} strokeWidth="1.6" strokeLinecap="round">
+        {/* 17 ─ Wrinkle / drape lines */}
+        <g fill="none" stroke={wrinkleC} strokeWidth="1.7" strokeLinecap="round">
           {wrinkles.map((d, i) => <path key={i} d={d}/>)}
         </g>
 
-        {/* ══ LAYER 18 — Seam relief: shadow stroke UNDER stitching ════════════ */}
-        {/* Thick dark underlay makes seams look recessed / 3D */}
-        <g fill="none" stroke={isLight ? 'rgba(0,0,0,0.10)' : 'rgba(0,0,0,0.16)'}
-          strokeWidth="3.5" strokeLinecap="round">
-          <path d="M 100,50 C 88,42 68,52 54,64"/>
-          <path d="M 180,50 C 192,42 212,52 226,64"/>
-          <path d="M 44,164 C 56,158 62,146 62,130"/>
-          <path d="M 236,164 C 224,158 218,146 218,130"/>
-          <path d="M 62,130 L 62,316"/>
-          <path d="M 218,130 L 218,316"/>
-          <path d="M 8,156 C 14,164 26,168 44,164"/>
-          <path d="M 272,156 C 266,164 254,168 236,164"/>
+        {/* 18 ─ Seam relief underlay (thick dark stroke — makes seams look recessed) */}
+        <g fill="none"
+          stroke={isLight ? 'rgba(0,0,0,0.11)' : 'rgba(0,0,0,0.18)'}
+          strokeWidth="4" strokeLinecap="round">
+          <path d="M 106,60 C 92,52 70,60 56,72"/>
+          <path d="M 194,60 C 208,52 230,60 244,72"/>
+          <path d="M 50,176 C 62,170 70,158 70,142"/>
+          <path d="M 250,176 C 238,170 230,158 230,142"/>
+          <path d="M 70,142 L 70,374"/>
+          <path d="M 230,142 L 230,374"/>
+          <path d="M 8,168 C 16,176 28,180 50,176"/>
+          <path d="M 292,168 C 284,176 272,180 250,176"/>
         </g>
 
-        {/* ══ LAYER 19 — Seam stitching fine lines (on top of relief) ══════════ */}
-        <g fill="none" stroke={seamColor} strokeWidth="1.0" strokeLinecap="round">
-          <path d="M 100,50 C 88,42 68,52 54,64"/>
-          <path d="M 180,50 C 192,42 212,52 226,64"/>
-          <path d="M 44,164 C 56,158 62,146 62,130"/>
-          <path d="M 236,164 C 224,158 218,146 218,130"/>
-          <path d="M 62,130 L 62,316"/>
-          <path d="M 218,130 L 218,316"/>
-          {/* Double-needle bottom hem */}
-          <path d="M 76,330 L 204,330"/>
-          <path d="M 77,326 L 203,326"/>
+        {/* 19 ─ Fine seam stitch lines */}
+        <g fill="none" stroke={seamC} strokeWidth="1.1" strokeLinecap="round">
+          <path d="M 106,60 C 92,52 70,60 56,72"/>
+          <path d="M 194,60 C 208,52 230,60 244,72"/>
+          <path d="M 50,176 C 62,170 70,158 70,142"/>
+          <path d="M 250,176 C 238,170 230,158 230,142"/>
+          <path d="M 70,142 L 70,374"/>
+          <path d="M 230,142 L 230,374"/>
+          {/* Double-needle hem */}
+          <path d="M 86,388 L 214,388"/>
+          <path d="M 87,384 L 213,384"/>
           {/* Sleeve cuff double-stitch */}
-          <path d="M 8,156 C 14,164 26,168 44,164"/>
-          <path d="M 272,156 C 266,164 254,168 236,164"/>
-          <path d="M 8,152 C 14,160 26,163.5 44,160"/>
-          <path d="M 272,152 C 266,160 254,163.5 236,160"/>
-          {/* Center neck line */}
-          <line x1="140" y1="68" x2="140" y2="92" strokeOpacity="0.5"/>
+          <path d="M 8,168 C 16,176 28,180 50,176"/>
+          <path d="M 292,168 C 284,176 272,180 250,176"/>
+          <path d="M 8,163 C 16,171 28,175 50,171"/>
+          <path d="M 292,163 C 284,171 272,175 250,171"/>
+          {/* Center neck guideline */}
+          <line x1="150" y1="78" x2="150" y2="104" strokeOpacity="0.5"/>
         </g>
 
-        {/* ══ LAYER 21 — V-neck cut edge detail ════════════════════════════════ */}
+        {/* 20 ─ V-neck cut detail */}
         {typeId === 'vneck' && side === 'front' && (
           <g fill="none">
-            <line x1="100" y1="50" x2="140" y2="116"
-              stroke={isLight ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.08)'}
-              strokeWidth="1.6"/>
-            <line x1="180" y1="50" x2="140" y2="116"
-              stroke={isLight ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.08)'}
-              strokeWidth="1.6"/>
-            <line x1="101" y1="52" x2="141" y2="118"
-              stroke={isLight ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.10)'}
-              strokeWidth="0.9"/>
-            <line x1="179" y1="52" x2="139" y2="118"
-              stroke={isLight ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.10)'}
-              strokeWidth="0.9"/>
+            <line x1="106" y1="60" x2="150" y2="124"
+              stroke={isLight ? 'rgba(0,0,0,0.17)' : 'rgba(255,255,255,0.08)'}
+              strokeWidth="1.7"/>
+            <line x1="194" y1="60" x2="150" y2="124"
+              stroke={isLight ? 'rgba(0,0,0,0.17)' : 'rgba(255,255,255,0.08)'}
+              strokeWidth="1.7"/>
+            <line x1="107" y1="62" x2="151" y2="126"
+              stroke={isLight ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.11)'}
+              strokeWidth="1.0"/>
+            <line x1="193" y1="62" x2="149" y2="126"
+              stroke={isLight ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.11)'}
+              strokeWidth="1.0"/>
           </g>
         )}
 
-        {/* ══ LAYER 22 — Collar band ════════════════════════════════════════════ */}
+        {/* 21 ─ Collar band */}
         {collar && (() => {
           const isPoloFront = typeId === 'polo' && side === 'front';
           const topEdge = isPoloFront
-            ? 'M 96,48 C 108,34 124,28 140,28 C 156,28 172,34 184,48'
-            : 'M 100,50 C 110,36 124,30 140,30 C 156,30 170,36 180,50';
+            ? 'M 102,58 C 114,42 130,36 150,36 C 170,36 186,42 198,58'
+            : 'M 106,60 C 116,44 130,38 150,38 C 170,38 184,44 194,60';
           const innerEdge = isPoloFront
-            ? 'M 98,60 C 110,50 124,46 140,46 C 156,46 170,50 182,60'
-            : 'M 100,50 C 110,60 124,68 140,68 C 156,68 170,60 180,50';
+            ? 'M 104,70 C 116,60 132,56 150,56 C 168,56 184,60 196,70'
+            : 'M 106,60 C 116,70 130,78 150,78 C 170,78 184,70 194,60';
           return (
             <>
-              {/* Base fill — slightly darker than body */}
               <path d={collar} fill={darkCol}/>
-              {/* Top-to-bottom tone on collar */}
               <path d={collar} fill={`url(#${uid}-topbot)`} opacity="0.7"
                 clipPath={`url(#${uid}-cclip)`}/>
-              {/* Rib knit texture */}
-              <path d={collar} fill={`url(#${uid}-rib)`} opacity="0.75"
+              <path d={collar} fill={`url(#${uid}-rib)`} opacity="0.80"
                 clipPath={`url(#${uid}-cclip)`}/>
-              {/* Cotton weave on collar */}
-              <path d={collar} fill={`url(#${uid}-cotton)`} opacity="0.8"
+              <path d={collar} fill={`url(#${uid}-wv)`} opacity="0.85"
                 clipPath={`url(#${uid}-cclip)`}/>
-              {/* Inner-edge shadow (collar has depth/fold) */}
-              <path d={collar} fill="none" stroke="rgba(0,0,0,0.30)" strokeWidth="5"
+              <path d={collar} fill="none" stroke="rgba(0,0,0,0.32)" strokeWidth="6"
                 clipPath={`url(#${uid}-cclip)`}/>
-              {/* Outer top-edge highlight (catches overhead light) */}
+              <path d={collar} fill={`url(#${uid}-vign)`} opacity="0.6"
+                clipPath={`url(#${uid}-cclip)`}/>
               <path d={topEdge} fill="none"
-                stroke={isLight ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.25)'}
-                strokeWidth="1.4"/>
-              {/* Inner bottom-edge shadow line */}
+                stroke={isLight ? 'rgba(255,255,255,0.70)' : 'rgba(255,255,255,0.28)'}
+                strokeWidth="1.5"/>
               <path d={innerEdge} fill="none"
-                stroke="rgba(0,0,0,0.22)" strokeWidth="1.1"/>
-              {/* Vignette on collar edges */}
-              <path d={collar} fill={`url(#${uid}-vign)`} opacity="0.5"
-                clipPath={`url(#${uid}-cclip)`}/>
+                stroke="rgba(0,0,0,0.24)" strokeWidth="1.2"/>
             </>
           );
         })()}
 
-        {/* ══ LAYER 23 — Polo placket + buttons ════════════════════════════════ */}
+        {/* 22 ─ Polo placket + buttons */}
         {polo && (
           <>
             <path d={POLO_PLACKET} fill={darkCol2}/>
-            <path d={POLO_PLACKET} fill={`url(#${uid}-topbot)`} opacity="0.5"/>
-            <path d={POLO_PLACKET} fill={`url(#${uid}-rib)`} opacity="0.55"/>
-            <line x1="131" y1="48" x2="131" y2="120"
-              stroke={isLight ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.09)'}
-              strokeWidth="1.0"/>
-            <line x1="149" y1="48" x2="149" y2="120"
-              stroke={isLight ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.09)'}
-              strokeWidth="1.0"/>
+            <path d={POLO_PLACKET} fill={`url(#${uid}-topbot)`} opacity="0.55"/>
+            <path d={POLO_PLACKET} fill={`url(#${uid}-rib)`}    opacity="0.60"/>
+            <line x1="141" y1="58" x2="141" y2="128"
+              stroke={isLight ? 'rgba(0,0,0,0.17)' : 'rgba(255,255,255,0.10)'}
+              strokeWidth="1.1"/>
+            <line x1="159" y1="58" x2="159" y2="128"
+              stroke={isLight ? 'rgba(0,0,0,0.17)' : 'rgba(255,255,255,0.10)'}
+              strokeWidth="1.1"/>
             {POLO_BTNS.map((b, i) => (
               <g key={i}>
-                <circle cx={b.cx} cy={b.cy} r="4.5" fill={darken(color, -75)}/>
-                <circle cx={b.cx} cy={b.cy} r="3.4" fill="rgba(0,0,0,0.38)"/>
-                <circle cx={b.cx} cy={b.cy} r="2.5" fill={darken(color, -58)}/>
-                <circle cx={b.cx - 1.0} cy={b.cy - 1.0} r="0.75" fill="rgba(255,255,255,0.32)"/>
-                <circle cx={b.cx - 1.1} cy={b.cy - 1.1} r="0.48" fill="rgba(0,0,0,0.55)"/>
-                <circle cx={b.cx + 1.1} cy={b.cy + 1.1} r="0.48" fill="rgba(0,0,0,0.55)"/>
+                <circle cx={b.cx} cy={b.cy} r="5"    fill={darken(color, -78)}/>
+                <circle cx={b.cx} cy={b.cy} r="3.8"  fill="rgba(0,0,0,0.38)"/>
+                <circle cx={b.cx} cy={b.cy} r="2.8"  fill={darken(color, -60)}/>
+                <circle cx={b.cx - 1.1} cy={b.cy - 1.1} r="0.85" fill="rgba(255,255,255,0.34)"/>
+                <circle cx={b.cx - 1.2} cy={b.cy - 1.2} r="0.52" fill="rgba(0,0,0,0.58)"/>
+                <circle cx={b.cx + 1.2} cy={b.cy + 1.2} r="0.52" fill="rgba(0,0,0,0.58)"/>
               </g>
             ))}
           </>
         )}
 
-        {/* ══ LAYER 24 — Back neck label (realistic detail, back side only) ════ */}
+        {/* 23 ─ Back neck label */}
         {side === 'back' && (
           <g>
-            <rect x="130" y="70" width="20" height="13" rx="1.5"
-              fill={isLight ? 'rgba(255,255,255,0.70)' : 'rgba(0,0,0,0.25)'}
-              stroke={isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.10)'}
-              strokeWidth="0.5"/>
-            <rect x="133" y="72.5" width="14" height="8" rx="1"
-              fill={darken(color, isLight ? -18 : -10)}/>
-            <line x1="137" y1="73" x2="137" y2="80"
-              stroke={isLight ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.18)'}
+            <rect x="138" y="80" width="24" height="14" rx="2"
+              fill={isLight ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.28)'}
+              stroke={isLight ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.12)'}
               strokeWidth="0.6"/>
-            <line x1="140" y1="73" x2="140" y2="80"
-              stroke={isLight ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.18)'}
-              strokeWidth="0.6"/>
-            <line x1="143" y1="73" x2="143" y2="80"
-              stroke={isLight ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.18)'}
-              strokeWidth="0.6"/>
+            <rect x="141" y="83" width="18" height="8" rx="1"
+              fill={darken(color, isLight ? -20 : -12)}/>
+            <line x1="146" y1="83.5" x2="146" y2="90.5"
+              stroke={isLight ? 'rgba(0,0,0,0.28)' : 'rgba(255,255,255,0.22)'}
+              strokeWidth="0.7"/>
+            <line x1="150" y1="83.5" x2="150" y2="90.5"
+              stroke={isLight ? 'rgba(0,0,0,0.28)' : 'rgba(255,255,255,0.22)'}
+              strokeWidth="0.7"/>
+            <line x1="154" y1="83.5" x2="154" y2="90.5"
+              stroke={isLight ? 'rgba(0,0,0,0.28)' : 'rgba(255,255,255,0.22)'}
+              strokeWidth="0.7"/>
           </g>
         )}
 
-        {/* ══ LAYER 25 — Center fold crease ════════════════════════════════════ */}
-        <line x1="140" y1="70" x2="140" y2="320"
+        {/* 24 ─ Center fold crease */}
+        <line x1="150" y1="78" x2="150" y2="374"
           stroke={isLight ? 'rgba(0,0,0,0.032)' : 'rgba(255,255,255,0.022)'}
-          strokeWidth="1" strokeDasharray="1,4"/>
+          strokeWidth="1.1" strokeDasharray="1.2,5"/>
 
-        {/* ══ LAYER 26 — Outer rim highlight ═══════════════════════════════════ */}
+        {/* 25 ─ Outer rim highlight (top edge catches light) */}
         <path d={body} fill="none"
-          stroke={isLight ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.10)'}
-          strokeWidth="0.8" strokeLinejoin="round"/>
+          stroke={isLight ? 'rgba(255,255,255,0.60)' : 'rgba(255,255,255,0.12)'}
+          strokeWidth="0.9" strokeLinejoin="round"/>
 
-        {/* ══ LAYER 27 — Outer dark outline ════════════════════════════════════ */}
+        {/* 26 ─ Outer dark contour */}
         <path d={body} fill="none"
-          stroke={outlineColor} strokeWidth="1.6" strokeLinejoin="round"/>
+          stroke={outlineC} strokeWidth="1.8" strokeLinejoin="round"/>
 
-        {/* ══ LAYER 28 — FRONT / BACK label ════════════════════════════════════ */}
-        <text
-          x={VW / 2} y={VH - 7}
-          textAnchor="middle"
-          fill={isLight ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.18)'}
-          fontSize="6.5" fontFamily="'Inter',sans-serif"
-          letterSpacing="4" fontWeight="700"
-        >
+        {/* 27 ─ FRONT / BACK text */}
+        <text x={VW / 2} y={VH - 8} textAnchor="middle"
+          fill={isLight ? 'rgba(0,0,0,0.17)' : 'rgba(255,255,255,0.18)'}
+          fontSize="7" fontFamily="'Inter',sans-serif"
+          letterSpacing="4.5" fontWeight="700">
           {side.toUpperCase()}
         </text>
       </svg>
 
-      {/* ── Print area dashed box ────────────────────────────────────────────── */}
+      {/* ── Print area indicator ─────────────────────────────────────────────── */}
       {(showPrintArea || designImage) && (
         <div style={{
           position: 'absolute', zIndex: 2,
           left: pLeft, top: pTop, width: pW, height: pH,
-          border: `1.5px dashed ${designImage ? 'rgba(201,150,122,0.45)' : 'rgba(201,150,122,0.75)'}`,
-          borderRadius: 6, pointerEvents: 'none', boxSizing: 'border-box',
+          border: `1.5px dashed ${designImage
+            ? 'rgba(201,150,122,0.45)' : 'rgba(201,150,122,0.78)'}`,
+          borderRadius: 7, pointerEvents: 'none', boxSizing: 'border-box',
         }}>
           {!designImage && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 8, color: 'rgba(201,150,122,0.55)', fontFamily: 'sans-serif', letterSpacing: 1.5, fontWeight: 700 }}>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex',
+              alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: 8, color: 'rgba(201,150,122,0.58)',
+                fontFamily: 'sans-serif', letterSpacing: 1.8, fontWeight: 700 }}>
                 PRINT AREA
               </span>
             </div>
@@ -670,40 +683,37 @@ export function ShirtViewer2D({
         </div>
       )}
 
-      {/* ── Design overlay + corner resize handles ───────────────────────────── */}
+      {/* ── Design overlay with drag + corner resize ─────────────────────────── */}
       {designImage && (() => {
         const dH = dSize * imgAspect;
         return (
           <div style={{
             position: 'absolute', zIndex: 3,
-            left: dLeft, top: dTop,
-            width: dSize, height: dH,
+            left: dLeft, top: dTop, width: dSize, height: dH,
             transform: `translate(-50%,-50%) rotate(${designRot}deg)`,
             overflow: 'visible',
           }}>
             <div style={{
               position: 'absolute', inset: -3,
-              border: '1.5px dashed rgba(201,150,122,0.65)',
+              border: '1.5px dashed rgba(201,150,122,0.68)',
               borderRadius: 4, pointerEvents: 'none',
-            }} />
+            }}/>
             <img
-              src={designImage}
-              alt="Design"
-              draggable={false}
+              src={designImage} alt="Design" draggable={false}
               onLoad={(e) => {
                 const { naturalWidth: nw, naturalHeight: nh } = e.currentTarget;
                 if (nw > 0) setImgAspect(nh / nw);
               }}
               onMouseDown={(e) => { startDrag(e.clientX, e.clientY); e.preventDefault(); }}
               onTouchStart={(e) => { const t = e.touches[0]; startDrag(t.clientX, t.clientY); e.preventDefault(); }}
-              onTouchMove={(e)  => { const t = e.touches[0]; moveDrag(t.clientX,  t.clientY); }}
+              onTouchMove={(e)  => { const t = e.touches[0]; moveDrag(t.clientX, t.clientY); }}
               onTouchEnd={endDrag}
               style={{
                 width: '100%', height: '100%',
                 objectFit: 'contain', display: 'block',
                 cursor: onDesignMove ? 'grab' : 'default',
                 userSelect: 'none', WebkitUserDrag: 'none',
-                filter: 'drop-shadow(0 2px 10px rgba(0,0,0,0.45))',
+                filter: 'drop-shadow(0 2px 10px rgba(0,0,0,0.48))',
               }}
             />
             {onDesignResize && [
@@ -715,14 +725,10 @@ export function ShirtViewer2D({
               <div key={i}
                 onMouseDown={(e) => { e.stopPropagation(); startResize(e.clientX, h.sign); e.preventDefault(); }}
                 style={{
-                  position: 'absolute', ...h.pos,
-                  transform: h.t,
-                  width: 12, height: 12,
-                  background: '#fff',
-                  border: '2.5px solid #8B5A3C',
-                  borderRadius: 2,
-                  cursor: h.c,
-                  boxShadow: '0 1px 5px rgba(0,0,0,0.55)',
+                  position: 'absolute', ...h.pos, transform: h.t,
+                  width: 12, height: 12, background: '#fff',
+                  border: '2.5px solid #8B5A3C', borderRadius: 2,
+                  cursor: h.c, boxShadow: '0 1px 5px rgba(0,0,0,0.55)',
                 }}
               />
             ))}
