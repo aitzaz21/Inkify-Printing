@@ -114,21 +114,25 @@ function lighten(hex, amt) { return darken(hex, amt); }
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ShirtViewer2D({
-  typeId        = 'plain-tshirt',
-  color         = '#FFFFFF',
-  side          = 'front',
-  designImage   = null,
-  designX       = 0.5,
-  designY       = 0.5,
-  designScale   = 1.0,
-  designRot     = 0,
-  onDesignMove  = null,
-  showPrintArea = false,
+  typeId         = 'plain-tshirt',
+  color          = '#FFFFFF',
+  side           = 'front',
+  designImage    = null,
+  designX        = 0.5,
+  designY        = 0.5,
+  designScale    = 1.0,
+  designRot      = 0,
+  onDesignMove   = null,
+  onDesignResize = null,
+  showPrintArea  = false,
 }) {
   const wrapRef  = useRef(null);
   const dragging = useRef(false);
   const drag0    = useRef({ mx: 0, my: 0, dx: 0, dy: 0 });
-  const [dim, setDim] = useState({ w: 380, h: 480 });
+  const resizing = useRef(false);
+  const resize0  = useRef({ mx: 0, initScale: 1, initHalfW: 0, sign: 1 });
+  const [dim, setDim]           = useState({ w: 380, h: 480 });
+  const [imgAspect, setImgAspect] = useState(1);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -176,15 +180,34 @@ export function ShirtViewer2D({
 
   const endDrag = useCallback(() => { dragging.current = false; }, []);
 
+  const startResize = useCallback((clientX, sign) => {
+    if (!onDesignResize) return;
+    resizing.current = true;
+    resize0.current = { mx: clientX, initScale: designScale, initHalfW: dSize / 2, sign };
+  }, [onDesignResize, designScale, dSize]);
+
+  const moveResize = useCallback((clientX) => {
+    if (!resizing.current || !onDesignResize) return;
+    const { mx, initScale, initHalfW, sign } = resize0.current;
+    const delta = (clientX - mx) * sign;
+    const newHalfW = initHalfW + delta;
+    if (newHalfW < 10) return;
+    const newScale = Math.max(0.3, Math.min(2.5, initScale * newHalfW / initHalfW));
+    onDesignResize(newScale);
+  }, [onDesignResize]);
+
+  const endResize = useCallback(() => { resizing.current = false; }, []);
+
   useEffect(() => {
-    const mm = (e) => moveDrag(e.clientX, e.clientY);
+    const mm = (e) => { moveDrag(e.clientX, e.clientY); moveResize(e.clientX); };
+    const mu = () => { endDrag(); endResize(); };
     window.addEventListener('mousemove', mm);
-    window.addEventListener('mouseup', endDrag);
+    window.addEventListener('mouseup', mu);
     return () => {
       window.removeEventListener('mousemove', mm);
-      window.removeEventListener('mouseup', endDrag);
+      window.removeEventListener('mouseup', mu);
     };
-  }, [moveDrag, endDrag]);
+  }, [moveDrag, endDrag, moveResize, endResize]);
 
   const { body, collar, polo } = getShirtDef(typeId, side);
   const uid      = `sv2-${typeId.replace(/-/g, '')}-${side}`;
@@ -511,27 +534,70 @@ export function ShirtViewer2D({
         </div>
       )}
 
-      {/* ── Design overlay ───────────────────────────────────────────────────── */}
-      {designImage && (
-        <img
-          src={designImage}
-          alt="Design"
-          draggable={false}
-          onMouseDown={(e) => { startDrag(e.clientX, e.clientY); e.preventDefault(); }}
-          onTouchStart={(e) => { const t = e.touches[0]; startDrag(t.clientX, t.clientY); e.preventDefault(); }}
-          onTouchMove={(e)  => { const t = e.touches[0]; moveDrag(t.clientX,  t.clientY); }}
-          onTouchEnd={endDrag}
-          style={{
+      {/* ── Design overlay + resize handles ─────────────────────────────────── */}
+      {designImage && (() => {
+        const dH = dSize * imgAspect;
+        return (
+          <div style={{
             position: 'absolute', zIndex: 3,
             left: dLeft, top: dTop,
-            width: dSize, height: 'auto',
+            width: dSize, height: dH,
             transform: `translate(-50%,-50%) rotate(${designRot}deg)`,
-            cursor: onDesignMove ? 'grab' : 'default',
-            userSelect: 'none', WebkitUserDrag: 'none', maxWidth: 'none',
-            filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.38))',
-          }}
-        />
-      )}
+            overflow: 'visible',
+          }}>
+            {/* Selection outline */}
+            <div style={{
+              position: 'absolute', inset: -3,
+              border: '1.5px dashed rgba(201,150,122,0.6)',
+              borderRadius: 4, pointerEvents: 'none',
+            }} />
+
+            {/* Design image */}
+            <img
+              src={designImage}
+              alt="Design"
+              draggable={false}
+              onLoad={(e) => {
+                const { naturalWidth: nw, naturalHeight: nh } = e.currentTarget;
+                if (nw > 0) setImgAspect(nh / nw);
+              }}
+              onMouseDown={(e) => { startDrag(e.clientX, e.clientY); e.preventDefault(); }}
+              onTouchStart={(e) => { const t = e.touches[0]; startDrag(t.clientX, t.clientY); e.preventDefault(); }}
+              onTouchMove={(e)  => { const t = e.touches[0]; moveDrag(t.clientX,  t.clientY); }}
+              onTouchEnd={endDrag}
+              style={{
+                width: '100%', height: '100%',
+                objectFit: 'contain', display: 'block',
+                cursor: onDesignMove ? 'grab' : 'default',
+                userSelect: 'none', WebkitUserDrag: 'none',
+                filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.38))',
+              }}
+            />
+
+            {/* Corner resize handles */}
+            {onDesignResize && [
+              { pos: { left: 0,  top: 0    }, t: 'translate(-50%,-50%)', c: 'nw-resize', sign: -1 },
+              { pos: { right: 0, top: 0    }, t: 'translate(50%,-50%)',  c: 'ne-resize', sign: 1  },
+              { pos: { left: 0,  bottom: 0 }, t: 'translate(-50%,50%)',  c: 'sw-resize', sign: -1 },
+              { pos: { right: 0, bottom: 0 }, t: 'translate(50%,50%)',   c: 'se-resize', sign: 1  },
+            ].map((h, i) => (
+              <div key={i}
+                onMouseDown={(e) => { e.stopPropagation(); startResize(e.clientX, h.sign); e.preventDefault(); }}
+                style={{
+                  position: 'absolute', ...h.pos,
+                  transform: h.t,
+                  width: 12, height: 12,
+                  background: '#fff',
+                  border: '2.5px solid #8B5A3C',
+                  borderRadius: 2,
+                  cursor: h.c,
+                  boxShadow: '0 1px 5px rgba(0,0,0,0.5)',
+                }}
+              />
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }

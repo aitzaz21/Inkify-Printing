@@ -360,30 +360,6 @@ export default function CustomizePage() {
           {/* ── LEFT: 2D Viewer (sticky) ──────────────────────────────── */}
           <div className="sticky top-20">
 
-            {/* Front / Back toggle */}
-            <div className="flex gap-2 mb-3 justify-center">
-              {(['front', 'back']).map(s => (
-                <button
-                  key={s}
-                  onClick={() => setActiveSide(s)}
-                  className="flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold transition-all duration-200"
-                  style={activeSide === s
-                    ? { background: 'linear-gradient(135deg,#6B4226,#8B5A3C)', color: '#fff', boxShadow: '0 3px 12px rgba(107,66,38,0.4)' }
-                    : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.1)' }
-                  }
-                >
-                  <span style={{ fontSize: 14 }}>{s === 'front' ? '⬛' : '⬜'}</span>
-                  {s.charAt(0).toUpperCase() + s.slice(1)} Side
-                  {s === 'front' && front.url && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
-                  )}
-                  {s === 'back' && back.url && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
-                  )}
-                </button>
-              ))}
-            </div>
-
             {/* Viewer container */}
             <div
               className="rounded-3xl overflow-hidden relative"
@@ -406,6 +382,10 @@ export default function CustomizePage() {
                   ? (x, y) => setActiveSideState(s => ({ ...s, x, y }))
                   : null
                 }
+                onDesignResize={activeDesignImg
+                  ? (scale) => setActiveSideState(s => ({ ...s, scale }))
+                  : null
+                }
                 showPrintArea={step === 2}
               />
 
@@ -420,9 +400,31 @@ export default function CustomizePage() {
                 ) : step === 2 ? (
                   <p className="text-[#8B5A3C] text-xs whitespace-nowrap">Upload a design to preview</p>
                 ) : (
-                  <p className="text-white/35 text-xs whitespace-nowrap">Front / Back toggle above</p>
+                  <p className="text-white/35 text-xs whitespace-nowrap">Front / Back toggle below</p>
                 )}
               </div>
+            </div>
+
+            {/* Front / Back toggle — bottom of viewer */}
+            <div className="flex mt-3 p-1 gap-1 rounded-2xl"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              {(['front', 'back']).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setActiveSide(s)}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200"
+                  style={activeSide === s
+                    ? { background: 'linear-gradient(135deg,#6B4226,#8B5A3C)', color: '#fff', boxShadow: '0 2px 8px rgba(107,66,38,0.4)' }
+                    : { color: 'rgba(255,255,255,0.4)' }
+                  }
+                >
+                  <span style={{ fontSize: 13 }}>{s === 'front' ? '⬛' : '⬜'}</span>
+                  {s.charAt(0).toUpperCase() + s.slice(1)} Side
+                  {((s === 'front' && front.url) || (s === 'back' && back.url)) && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                  )}
+                </button>
+              ))}
             </div>
 
             {/* Price bar */}
