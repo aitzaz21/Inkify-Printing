@@ -3,86 +3,114 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 const VW = 280;
 const VH = 360;
 
+// Print area sits inside the body, well below the armhole seam
 const PRINT_AREA = {
-  front: { x: 0.268, y: 0.308, w: 0.464, h: 0.490 },
-  back:  { x: 0.268, y: 0.255, w: 0.464, h: 0.540 },
+  front: { x: 0.300, y: 0.410, w: 0.400, h: 0.395 },
+  back:  { x: 0.300, y: 0.360, w: 0.400, h: 0.435 },
 };
 
 const BASE_SIZE = 82;
 
-// ─── Improved shirt paths – smoother bezier curves ────────────────────────────
+// ─── Realistic flat-lay shirt paths ───────────────────────────────────────────
+// Proportions based on a standard medium T-shirt laid flat:
+//   Shoulder-to-shoulder ≈ 175 px, sleeve horizontal reach ≈ 38 px each side,
+//   body height ≈ 188 px, collar ring ≈ 78 px wide × 36 px tall.
 
 const BODY_CREW =
-  'M 104,50 ' +
-  'C 95,44 78,58 68,67 ' +           // left shoulder slope
-  'C 58,72 38,78 26,82 ' +           // outer shoulder to sleeve
-  'C 16,88 7,106 6,126 ' +           // sleeve outer curve (rounded tip)
-  'L 9,163 ' +                       // sleeve bottom outer
-  'L 36,168 ' +                      // sleeve hem inner
-  'C 46,163 53,157 60,152 ' +        // armhole concave curve
-  'C 57,197 57,262 60,316 ' +        // left side (subtle taper)
-  'C 60,323 66,328 72,328 ' +        // hem corner
-  'L 208,328 ' +                     // bottom hem
-  'C 214,328 220,323 220,316 ' +     // right hem corner
-  'C 223,262 223,197 220,152 ' +     // right side (subtle taper)
-  'C 227,157 234,163 244,168 ' +     // right armhole
-  'L 271,163 ' +                     // right sleeve hem inner
-  'C 274,148 274,134 274,126 ' +     // right sleeve bottom
-  'C 273,106 263,88 252,82 ' +       // right sleeve outer
-  'C 240,78 222,72 212,67 ' +        // outer right shoulder
-  'C 202,58 185,44 176,50 ' +        // right shoulder slope
-  'C 165,61 153,67 140,67 ' +        // right collar arc
-  'C 127,67 115,61 104,50 Z';        // left collar arc
+  // left collar attachment
+  'M 102,52 ' +
+  // left shoulder: smooth outward-downward slope
+  'C 90,44 70,54 56,66 ' +
+  // sleeve upper edge sweeps outward
+  'C 40,74 20,82 10,96 ' +
+  // sleeve outer tip rounds at the cuff
+  'C 4,110 4,124 8,140 ' +
+  // bottom of the cuff outer edge
+  'L 10,150 ' +
+  // cuff hem — short sleeve band across the end
+  'C 18,156 30,158 46,154 ' +
+  // armhole: concave curve rising back to the body — defines T-shirt realism
+  'C 56,148 62,138 62,126 ' +
+  // left body side seam, straight down
+  'L 62,316 ' +
+  // left hem rounded corner
+  'C 62,324 68,330 76,330 ' +
+  // bottom hem
+  'L 204,330 ' +
+  // right hem rounded corner
+  'C 212,330 218,324 218,316 ' +
+  // right body side seam
+  'L 218,126 ' +
+  // right armhole: concave mirror
+  'C 218,138 224,148 234,154 ' +
+  // right cuff hem
+  'C 250,158 262,156 270,150 ' +
+  'L 272,140 ' +
+  // right sleeve outer tip rounds
+  'C 276,124 276,110 270,96 ' +
+  // right sleeve upper edge
+  'C 260,82 240,74 224,66 ' +
+  // right shoulder slope
+  'C 210,54 190,44 178,52 ' +
+  // right collar arc
+  'C 168,62 155,70 140,70 ' +
+  // left collar arc back to start
+  'C 125,70 112,62 102,52 Z';
 
 const BODY_VNECK =
-  'M 104,50 ' +
-  'C 95,44 78,58 68,67 ' +
-  'C 58,72 38,78 26,82 ' +
-  'C 16,88 7,106 6,126 ' +
-  'L 9,163 L 36,168 ' +
-  'C 46,163 53,157 60,152 ' +
-  'C 57,197 57,262 60,316 ' +
-  'C 60,323 66,328 72,328 L 208,328 ' +
-  'C 214,328 220,323 220,316 ' +
-  'C 223,262 223,197 220,152 ' +
-  'C 227,157 234,163 244,168 ' +
-  'L 271,163 ' +
-  'C 274,148 274,134 274,126 ' +
-  'C 273,106 263,88 252,82 ' +
-  'C 240,78 222,72 212,67 ' +
-  'C 202,58 185,44 176,50 ' +
-  'L 140,112 L 104,50 Z';            // V-point instead of collar arc
+  'M 102,52 ' +
+  'C 90,44 70,54 56,66 ' +
+  'C 40,74 20,82 10,96 ' +
+  'C 4,110 4,124 8,140 ' +
+  'L 10,150 ' +
+  'C 18,156 30,158 46,154 ' +
+  'C 56,148 62,138 62,126 ' +
+  'L 62,316 ' +
+  'C 62,324 68,330 76,330 ' +
+  'L 204,330 ' +
+  'C 212,330 218,324 218,316 ' +
+  'L 218,126 ' +
+  'C 218,138 224,148 234,154 ' +
+  'C 250,158 262,156 270,150 ' +
+  'L 272,140 ' +
+  'C 276,124 276,110 270,96 ' +
+  'C 260,82 240,74 224,66 ' +
+  'C 210,54 190,44 178,52 ' +
+  // V-point: right collar edge → deep V → left collar edge
+  'L 140,118 L 102,52 Z';
 
+// Collar band ring (crew neck) — sits above the body attachment points
 const COLLAR_CREW =
-  'M 104,50 C 115,39 127,33 140,33 C 153,33 165,39 176,50 ' +
-  'C 165,61 153,67 140,67 C 127,67 115,61 104,50 Z';
+  'M 102,52 C 113,38 126,32 140,32 C 154,32 167,38 178,52 ' +
+  'C 167,62 155,70 140,70 C 125,70 113,62 102,52 Z';
 
+// Polo collar band — slightly wider, flatter, with open-front shape
 const COLLAR_POLO =
-  'M 100,49 C 112,36 126,30 140,30 C 154,30 168,36 180,49 ' +
-  'L 178,57 C 166,48 153,44 140,44 C 127,44 114,48 102,57 Z';
+  'M 98,50 C 110,36 126,30 140,30 C 154,30 170,36 182,50 ' +
+  'L 180,60 C 168,50 154,46 140,46 C 126,46 112,50 100,60 Z';
 
-const POLO_PLACKET = 'M 130,49 L 130,110 L 150,110 L 150,49 Z';
-const POLO_BTNS = [{ cx: 140, cy: 64 }, { cx: 140, cy: 78 }, { cx: 140, cy: 92 }];
+const POLO_PLACKET = 'M 131,50 L 131,120 L 149,120 L 149,50 Z';
+const POLO_BTNS = [{ cx: 140, cy: 68 }, { cx: 140, cy: 84 }, { cx: 140, cy: 100 }];
 
-// Natural drape wrinkle paths
+// Fabric drape wrinkle paths — match new body geometry
 const WRINKLES_FRONT = [
-  'M 110,78 C 116,95 114,115 112,130',   // left collar-chest wrinkle
-  'M 168,78 C 164,95 166,115 168,130',   // right collar-chest wrinkle
-  'M 82,158 C 76,170 74,182 78,196',     // left armhole tension
-  'M 198,158 C 204,170 206,182 202,196', // right armhole tension
-  'M 118,215 C 122,228 120,245 117,258', // lower-left body
-  'M 162,215 C 158,228 160,245 163,258', // lower-right body
+  'M 108,82 C 114,100 112,122 110,138',   // left collar-chest
+  'M 172,82 C 166,100 168,122 170,138',   // right collar-chest
+  'M 78,152 C 72,166 70,182 74,198',      // left armhole tension
+  'M 202,152 C 208,166 210,182 206,198',  // right armhole tension
+  'M 116,222 C 120,238 118,258 115,272',  // lower-left body
+  'M 164,222 C 160,238 162,258 165,272',  // lower-right body
 ];
 
 const WRINKLES_BACK = [
-  'M 110,78 C 115,95 112,115 110,132',
-  'M 170,78 C 165,95 168,115 170,132',
-  'M 82,158 C 77,170 75,183 79,197',
-  'M 198,158 C 203,170 205,183 201,197',
-  'M 115,220 C 120,234 118,252 115,266',
-  'M 165,220 C 160,234 162,252 165,266',
-  'M 100,275 C 107,285 105,298 102,308',
-  'M 180,275 C 173,285 175,298 178,308',
+  'M 108,82 C 114,100 112,122 110,138',
+  'M 172,82 C 166,100 168,122 170,138',
+  'M 78,152 C 73,166 71,182 75,198',
+  'M 202,152 C 207,166 209,182 205,198',
+  'M 113,228 C 118,244 116,264 113,278',
+  'M 167,228 C 162,244 164,264 167,278',
+  'M 96,282 C 104,294 102,308  98,320',
+  'M 184,282 C 176,294 178,308 182,320',
 ];
 
 function getShirtDef(typeId, side) {
@@ -306,29 +334,29 @@ export function ShirtViewer2D({
             <stop offset="100%"  stopColor="#000" stopOpacity="0.18"/>
           </linearGradient>
 
-          {/* Radial chest highlight – light from front */}
-          <radialGradient id={`${uid}-chest`} gradientUnits="userSpaceOnUse" cx="140" cy="148" r="118">
-            <stop offset="0%"    stopColor="#fff" stopOpacity="0.16"/>
+          {/* Radial chest highlight – light from front-top */}
+          <radialGradient id={`${uid}-chest`} gradientUnits="userSpaceOnUse" cx="140" cy="200" r="130">
+            <stop offset="0%"    stopColor="#fff" stopOpacity="0.18"/>
             <stop offset="45%"   stopColor="#fff" stopOpacity="0.04"/>
-            <stop offset="100%"  stopColor="#000" stopOpacity="0.05"/>
+            <stop offset="100%"  stopColor="#000" stopOpacity="0.06"/>
           </radialGradient>
 
-          {/* Left sleeve tip gradient */}
+          {/* Left sleeve tip shadow gradient */}
           <linearGradient id={`${uid}-stl`} gradientUnits="userSpaceOnUse" x1="62" y1="0" x2="0" y2="0">
             <stop offset="0%"   stopColor="#000" stopOpacity="0"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.28"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.32"/>
           </linearGradient>
 
-          {/* Right sleeve tip gradient */}
+          {/* Right sleeve tip shadow gradient */}
           <linearGradient id={`${uid}-str`} gradientUnits="userSpaceOnUse" x1="218" y1="0" x2={VW} y2="0">
             <stop offset="0%"   stopColor="#000" stopOpacity="0"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0.28"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0.32"/>
           </linearGradient>
 
-          {/* Shoulder highlight */}
-          <radialGradient id={`${uid}-shoulder`} gradientUnits="userSpaceOnUse" cx="140" cy="52" r="160">
-            <stop offset="0%"   stopColor="#fff" stopOpacity="0.18"/>
-            <stop offset="50%"  stopColor="#fff" stopOpacity="0.04"/>
+          {/* Shoulder/collar highlight */}
+          <radialGradient id={`${uid}-shoulder`} gradientUnits="userSpaceOnUse" cx="140" cy="52" r="170">
+            <stop offset="0%"   stopColor="#fff" stopOpacity="0.20"/>
+            <stop offset="45%"  stopColor="#fff" stopOpacity="0.05"/>
             <stop offset="100%" stopColor="#fff" stopOpacity="0"/>
           </radialGradient>
         </defs>
@@ -353,21 +381,20 @@ export function ShirtViewer2D({
         <rect x="0" y="0" width={VW} height={VH}
           fill={`url(#${uid}-chest)`} clipPath={`url(#${uid}-clip)`}/>
         {/* Shoulder specular highlight */}
-        <rect x="0" y="0" width={VW} height="130"
+        <rect x="0" y="0" width={VW} height="140"
           fill={`url(#${uid}-shoulder)`} clipPath={`url(#${uid}-clip)`}/>
 
         {/* ── 5. SLEEVE TIP SHADOWS ───────────────────────────────────────────── */}
-        <rect x="0" y="78" width="64" height="94"
+        <rect x="0" y="62" width="66" height="104"
           fill={`url(#${uid}-stl)`} clipPath={`url(#${uid}-clip)`}/>
-        <rect x="216" y="78" width="64" height="94"
+        <rect x="214" y="62" width="66" height="104"
           fill={`url(#${uid}-str)`} clipPath={`url(#${uid}-clip)`}/>
 
         {/* ── 6. ARMHOLE DEPTH SHADOWS ────────────────────────────────────────── */}
-        {/* These simulate the concave shadow of the armhole opening */}
-        <ellipse cx="60" cy="154" rx="24" ry="18"
-          fill="rgba(0,0,0,0.20)" clipPath={`url(#${uid}-clip)`}/>
-        <ellipse cx="220" cy="154" rx="24" ry="18"
-          fill="rgba(0,0,0,0.20)" clipPath={`url(#${uid}-clip)`}/>
+        <ellipse cx="62" cy="142" rx="22" ry="20"
+          fill="rgba(0,0,0,0.22)" clipPath={`url(#${uid}-clip)`}/>
+        <ellipse cx="218" cy="142" rx="22" ry="20"
+          fill="rgba(0,0,0,0.22)" clipPath={`url(#${uid}-clip)`}/>
 
         {/* ── 7. INNER EDGE SHADOW (gives fabric thickness / 3D rim) ──────────── */}
         <path d={body} fill="none"
@@ -383,41 +410,41 @@ export function ShirtViewer2D({
 
         {/* ── 9. SEAM LINES ───────────────────────────────────────────────────── */}
         <g fill="none" stroke={seamColor} strokeWidth="0.9" strokeLinecap="round">
-          {/* Shoulder seams */}
-          <path d="M 104,50 C 95,44 78,58 68,67"/>
-          <path d="M 176,50 C 185,44 202,58 212,67"/>
-          {/* Armhole seam curves */}
-          <path d="M 36,168 C 44,164 52,159 60,152"/>
-          <path d="M 244,168 C 236,164 228,159 220,152"/>
+          {/* Shoulder seams — follow the new shoulder curve */}
+          <path d="M 102,52 C 90,44 70,54 56,66"/>
+          <path d="M 178,52 C 190,44 210,54 224,66"/>
+          {/* Armhole seam curves — concave, rises to body */}
+          <path d="M 46,154 C 56,148 62,138 62,126"/>
+          <path d="M 234,154 C 224,148 218,138 218,126"/>
           {/* Side seams */}
-          <path d="M 60,152 C 57,200 57,262 60,316"/>
-          <path d="M 220,152 C 223,200 223,262 220,316"/>
+          <path d="M 62,126 L 62,316"/>
+          <path d="M 218,126 L 218,316"/>
           {/* Double-stitch bottom hem */}
-          <path d="M 72,328 L 208,328"/>
-          <path d="M 73,324 L 207,324"/>
-          {/* Sleeve hems */}
-          <path d="M 9,163 L 36,168"/>
-          <path d="M 271,163 L 244,168"/>
-          {/* Neck center line (subtle) */}
-          <line x1="140" y1="67" x2="140" y2="86" strokeOpacity="0.5"/>
+          <path d="M 76,330 L 204,330"/>
+          <path d="M 77,326 L 203,326"/>
+          {/* Sleeve cuff hems */}
+          <path d="M 10,150 C 18,156 30,158 46,154"/>
+          <path d="M 270,150 C 262,156 250,158 234,154"/>
+          {/* Neck center line */}
+          <line x1="140" y1="70" x2="140" y2="90" strokeOpacity="0.5"/>
         </g>
 
         {/* ── 10. V-NECK EDGE DETAIL ──────────────────────────────────────────── */}
         {typeId === 'vneck' && side === 'front' && (
           <g fill="none">
             {/* Shadow edge of V */}
-            <line x1="104" y1="50" x2="140" y2="112"
-              stroke={isLight ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.06)'}
+            <line x1="102" y1="52" x2="140" y2="118"
+              stroke={isLight ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.07)'}
               strokeWidth="1.5"/>
-            <line x1="176" y1="50" x2="140" y2="112"
-              stroke={isLight ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.06)'}
+            <line x1="178" y1="52" x2="140" y2="118"
+              stroke={isLight ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.07)'}
               strokeWidth="1.5"/>
-            {/* Highlight edge of V (offset 1px) */}
-            <line x1="105" y1="52" x2="141" y2="114"
-              stroke={isLight ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.07)'}
+            {/* Highlight edge of V (offset 1px inward) */}
+            <line x1="103" y1="54" x2="141" y2="120"
+              stroke={isLight ? 'rgba(255,255,255,0.50)' : 'rgba(255,255,255,0.08)'}
               strokeWidth="0.8"/>
-            <line x1="175" y1="52" x2="139" y2="114"
-              stroke={isLight ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.07)'}
+            <line x1="177" y1="54" x2="139" y2="120"
+              stroke={isLight ? 'rgba(255,255,255,0.50)' : 'rgba(255,255,255,0.08)'}
               strokeWidth="0.8"/>
           </g>
         )}
@@ -425,11 +452,11 @@ export function ShirtViewer2D({
         {/* ── 11. COLLAR BAND ─────────────────────────────────────────────────── */}
         {collar && (() => {
           const collarHighlightPath = typeId === 'polo' && side === 'front'
-            ? `M 100,49 C 112,36 126,30 140,30 C 154,30 168,36 180,49`
-            : `M 104,50 C 115,39 127,33 140,33 C 153,33 165,39 176,50`;
+            ? `M 98,50 C 110,36 126,30 140,30 C 154,30 170,36 182,50`
+            : `M 102,52 C 113,38 126,32 140,32 C 154,32 167,38 178,52`;
           const collarInnerPath = typeId === 'polo' && side === 'front'
-            ? `M 102,57 C 114,48 127,44 140,44 C 153,44 166,48 178,57`
-            : `M 104,50 C 115,61 127,67 140,67 C 153,67 165,61 176,50`;
+            ? `M 100,60 C 112,50 126,46 140,46 C 154,46 168,50 180,60`
+            : `M 102,52 C 113,62 125,70 140,70 C 155,70 167,62 178,52`;
           return (
             <>
               {/* 11a. Collar base fill (slightly darker than shirt) */}
@@ -470,10 +497,10 @@ export function ShirtViewer2D({
             {/* Placket rib texture */}
             <path d={POLO_PLACKET} fill={`url(#${uid}-rib)`} opacity="0.5"/>
             {/* Placket side lines */}
-            <line x1="130" y1="49" x2="130" y2="110"
+            <line x1="131" y1="50" x2="131" y2="120"
               stroke={isLight ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.08)'}
               strokeWidth="0.9"/>
-            <line x1="150" y1="49" x2="150" y2="110"
+            <line x1="149" y1="50" x2="149" y2="120"
               stroke={isLight ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.08)'}
               strokeWidth="0.9"/>
             {/* Buttons with shine */}
@@ -504,11 +531,11 @@ export function ShirtViewer2D({
 
         {/* ── 15. SIDE LABEL ──────────────────────────────────────────────────── */}
         <text
-          x={VW / 2} y={VH - 5}
+          x={VW / 2} y={VH - 8}
           textAnchor="middle"
-          fill={isLight ? 'rgba(0,0,0,0.20)' : 'rgba(255,255,255,0.22)'}
+          fill={isLight ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.20)'}
           fontSize="7" fontFamily="'Inter',sans-serif"
-          letterSpacing="3" fontWeight="700"
+          letterSpacing="3.5" fontWeight="700"
         >
           {side.toUpperCase()}
         </text>
