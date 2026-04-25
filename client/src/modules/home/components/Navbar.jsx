@@ -145,16 +145,27 @@ export default function Navbar() {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-1.5 flex-shrink-0 group">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg,#6B4226,#8B5A3C)' }}>
-              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
-              </svg>
+          <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group" aria-label="Inkify Printing — Home">
+            <img
+              src="/logo.jpg"
+              alt="Inkify Printing"
+              style={{
+                height: 40,
+                width: 40,
+                borderRadius: 10,
+                objectFit: 'cover',
+                objectPosition: 'center',
+                flexShrink: 0,
+                boxShadow: '0 2px 12px rgba(0,0,0,0.65), 0 0 0 1px rgba(201,150,122,0.15)',
+                transition: 'box-shadow 0.2s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(107,66,38,0.5), 0 0 0 1.5px rgba(201,150,122,0.35)'; }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.65), 0 0 0 1px rgba(201,150,122,0.15)'; }}
+            />
+            <div className="flex flex-col leading-none gap-px hidden sm:flex">
+              <span className="font-display font-bold tracking-widest text-white" style={{ fontSize: 13, letterSpacing: '0.14em' }}>INKIFY</span>
+              <span className="font-display font-light tracking-widest text-ink-brown" style={{ fontSize: 13, letterSpacing: '0.14em' }}>PRINTING</span>
             </div>
-            <span className="font-display font-bold text-lg tracking-wide text-white group-hover:text-white transition-colors">
-              Inkify Printing
-            </span>
           </Link>
 
           {/* Center nav links */}

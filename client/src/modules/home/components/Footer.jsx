@@ -51,9 +51,24 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-10 mb-12" style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
           {/* Brand */}
           <div>
-            <div className="mb-4">
-              <span className="font-display font-bold text-xl tracking-widest text-white">INKIFY</span>
-              <span className="font-display font-light text-xl tracking-widest text-ink-brown"> PRINTING</span>
+            <div className="flex items-center gap-3 mb-5">
+              <img
+                src="/logo.jpg"
+                alt="Inkify Printing"
+                style={{
+                  height: 52,
+                  width: 52,
+                  borderRadius: 12,
+                  objectFit: 'cover',
+                  objectPosition: 'center',
+                  flexShrink: 0,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.7), 0 0 0 1px rgba(201,150,122,0.12)',
+                }}
+              />
+              <div className="flex flex-col leading-none gap-1">
+                <span className="font-display font-bold text-xl tracking-widest text-white">INKIFY</span>
+                <span className="font-display font-light text-xl tracking-widest text-ink-brown">PRINTING</span>
+              </div>
             </div>
             <p className="text-white/40 text-sm leading-relaxed">{brandText}</p>
             {socialLinks.length > 0 && (

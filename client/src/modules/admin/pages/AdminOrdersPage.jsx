@@ -150,7 +150,9 @@ const OrderCard = ({ order, onStatusChange, onReverse }) => {
           </div>
           <div className="text-right flex-shrink-0">
             <p className="font-display font-bold text-white text-lg">PKR {Math.round(order.total).toLocaleString()}</p>
-            <p className="text-white/30 text-xs capitalize">{order.paymentMethod}</p>
+            <p className="text-white/30 text-xs capitalize">
+              {order.paymentMethod === 'manual' ? '🏦 Bank Transfer' : order.paymentMethod === 'card' ? '💳 Card' : '💵 COD'}
+            </p>
           </div>
         </div>
 
@@ -193,6 +195,50 @@ const OrderCard = ({ order, onStatusChange, onReverse }) => {
               <p className="text-white/45 text-xs mt-0.5 truncate">
                 Ref: <span className="font-mono">{order.paymentReference}</span>
               </p>
+            )}
+          </div>
+        )}
+
+        {/* ── Manual / bank-transfer payment info ─────────────────── */}
+        {order.paymentMethod === 'manual' && (
+          <div className="rounded-xl p-3 space-y-2"
+            style={{ background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)' }}>
+            <p className="text-amber-400/70 text-[10px] tracking-widest uppercase font-semibold">Bank Transfer — Verify Before Confirming</p>
+
+            {order.manualPaymentMethodTitle && (
+              <p className="text-white/70 text-xs">
+                Account: <span className="text-white/90 font-medium">{order.manualPaymentMethodTitle}</span>
+              </p>
+            )}
+            {order.manualPaymentReference && (
+              <p className="text-white/55 text-xs">
+                Ref: <span className="font-mono text-white/80">{order.manualPaymentReference}</span>
+              </p>
+            )}
+
+            {/* Payment proof screenshot */}
+            {order.manualPaymentProofUrl ? (
+              <div>
+                <p className="text-amber-400/60 text-[10px] uppercase font-semibold mb-1.5">Payment Proof Screenshot</p>
+                <a href={order.manualPaymentProofUrl} target="_blank" rel="noopener noreferrer"
+                  className="block group relative rounded-xl overflow-hidden"
+                  style={{ border:'1px solid rgba(245,158,11,0.25)', maxWidth: 240 }}>
+                  <img src={order.manualPaymentProofUrl} alt="Payment proof"
+                    className="w-full object-contain"
+                    style={{ background:'rgba(0,0,0,0.3)', maxHeight: 180 }} />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ background:'rgba(0,0,0,0.5)' }}>
+                    <span className="text-white text-xs font-medium px-3 py-1.5 rounded-lg"
+                      style={{ background:'rgba(107,66,38,0.85)' }}>View Full Size ↗</span>
+                  </div>
+                </a>
+                <p className="text-amber-300/50 text-[10px] mt-1">Click to open full size in new tab</p>
+              </div>
+            ) : (
+              <div className="rounded-lg p-2.5 text-center"
+                style={{ background:'rgba(239,68,68,0.07)', border:'1px solid rgba(239,68,68,0.2)' }}>
+                <p className="text-red-400/70 text-xs">No payment screenshot uploaded — contact customer before confirming.</p>
+              </div>
             )}
           </div>
         )}

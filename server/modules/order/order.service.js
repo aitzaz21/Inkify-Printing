@@ -3,9 +3,13 @@ const { sendOrderEmail } = require('../../utils/emailService');
 const { recordDesignSale } = require('../designer/designer.service');
 
 const createOrder = async (userId, body) => {
-  const { items, shippingAddress, paymentMethod, cardDetails } = body;
+  const { items, shippingAddress, paymentMethod, cardDetails, manualPayment } = body;
   if (!items?.length) throw { status: 422, message: 'Order must have at least one item.' };
   if (!shippingAddress?.phone?.trim()) throw { status: 422, message: 'Phone number is required.' };
+  if (paymentMethod === 'manual') {
+    if (!manualPayment?.proofUrl)       throw { status: 422, message: 'Payment proof screenshot is required for bank transfer.' };
+    if (!manualPayment?.paymentMethodId) throw { status: 422, message: 'Please select a payment account.' };
+  }
 
   try {
     const User = require('../user/user.model');
@@ -75,6 +79,12 @@ const createOrder = async (userId, body) => {
     total:           Math.round(total    * 100) / 100,
     shippingAddress,
     paymentMethod:   paymentMethod || 'cod',
+    ...(paymentMethod === 'manual' && manualPayment ? {
+      manualPaymentMethodId:    manualPayment.paymentMethodId || null,
+      manualPaymentMethodTitle: manualPayment.methodTitle     || '',
+      manualPaymentProofUrl:    manualPayment.proofUrl        || null,
+      manualPaymentReference:   manualPayment.reference       || '',
+    } : {}),
   });
 
   await order.populate('user', 'firstName lastName email');

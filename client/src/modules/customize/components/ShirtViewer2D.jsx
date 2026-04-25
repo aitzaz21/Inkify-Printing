@@ -137,6 +137,7 @@ export function ShirtViewer2D({
   onDesignMove   = null,
   onDesignResize = null,
   showPrintArea  = false,
+  mockupUrl      = null,
 }) {
   const wrapRef  = useRef(null);
   const dragging = useRef(false);
@@ -417,6 +418,27 @@ export function ShirtViewer2D({
             PAINT LAYERS  (bottom → top)
             ══════════════════════════════════════════════════════════════════ */}
 
+        {mockupUrl ? (
+          /* ── Mockup image mode: admin-uploaded PNG replaces SVG rendering ── */
+          <>
+            <image
+              href={mockupUrl}
+              x="0" y="0"
+              width={VW} height={VH}
+              preserveAspectRatio="xMidYMid meet"
+              filter={`url(#${uid}-drop)`}
+            />
+            <text x={VW / 2} y={VH - 8} textAnchor="middle"
+              fill="rgba(255,255,255,0.22)"
+              fontSize="7" fontFamily="'Inter',sans-serif"
+              letterSpacing="4.5" fontWeight="700">
+              {side.toUpperCase()}
+            </text>
+          </>
+        ) : (
+          /* ── SVG rendering mode: 27-layer procedural shirt ── */
+          <>
+
         {/* 1 ─ Base fill + realistic drop-shadow */}
         <path d={body} fill={color} filter={`url(#${uid}-drop)`}/>
 
@@ -660,6 +682,9 @@ export function ShirtViewer2D({
           letterSpacing="4.5" fontWeight="700">
           {side.toUpperCase()}
         </text>
+
+          </> /* end SVG mode */
+        )} {/* end mockupUrl conditional */}
       </svg>
 
       {/* ── Print area indicator ─────────────────────────────────────────────── */}

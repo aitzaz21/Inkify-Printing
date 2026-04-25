@@ -61,10 +61,16 @@ const orderSchema = new mongoose.Schema({
     phone:      { type: String },
   },
 
-  paymentMethod:    { type: String, enum: ['cod', 'card'], default: 'cod' },
+  paymentMethod:    { type: String, enum: ['cod', 'card', 'manual'], default: 'cod' },
   paymentStatus:    { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
   transactionId:    { type: String, default: null },
   paymentReference: { type: String, default: null },
+
+  // Manual bank-transfer payment fields
+  manualPaymentMethodId:    { type: mongoose.Schema.Types.ObjectId, ref: 'PaymentMethod', default: null },
+  manualPaymentMethodTitle: { type: String, default: '' },
+  manualPaymentProofUrl:    { type: String, default: null },
+  manualPaymentReference:   { type: String, default: '' },
 
   status: {
     type: String,

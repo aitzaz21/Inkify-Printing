@@ -6,7 +6,10 @@
       "Bash(npx vite *)",
       "Bash(node -e ' *)",
       "Bash(npm run *)",
-      "Bash(node -e \"const p = require\\('./node_modules/@react-three/drei/package.json'\\); console.log\\(p.version\\)\")"
+      "Bash(node -e \"const p = require\\('./node_modules/@react-three/drei/package.json'\\); console.log\\(p.version\\)\")",
+      "WebFetch(domain:www.canva.com)",
+      "Bash(xargs ls *)",
+      "Bash(xargs cat *)"
     ]
   }
 }

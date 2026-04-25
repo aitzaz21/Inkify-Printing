@@ -43,6 +43,9 @@ const NAV = [
   { to: '/admin/withdrawals',  label: 'Withdrawals',
     icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg> },
 
+  { to: '/admin/payment-methods', label: 'Payment Methods',
+    icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg> },
+
   // ── Content Management group ─────────────────────────────────
   { divider: true, label: 'Content' },
 
@@ -93,11 +96,26 @@ export default function AdminLayout({ children }) {
   const Sidebar = ({ onLinkClick }) => (
     <div className="flex flex-col h-full">
       <div className="p-5 border-b border-white/[0.08]">
-        <Link to="/" className="block">
-          <span className="font-display font-bold text-base tracking-widest text-white">INKIFY</span>
-          <span className="font-display font-light text-base tracking-widest text-ink-brown"> PRINTING</span>
+        <Link to="/" className="flex items-center gap-2.5" aria-label="Inkify Printing — Home">
+          <img
+            src="/logo.jpg"
+            alt="Inkify Printing"
+            style={{
+              height: 36,
+              width: 36,
+              borderRadius: 8,
+              objectFit: 'cover',
+              objectPosition: 'center',
+              flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,150,122,0.12)',
+            }}
+          />
+          <div className="flex flex-col leading-none gap-px">
+            <span className="font-display font-bold tracking-widest text-white" style={{ fontSize: 12, letterSpacing: '0.14em' }}>INKIFY</span>
+            <span className="font-display font-light tracking-widest text-ink-brown" style={{ fontSize: 12, letterSpacing: '0.14em' }}>PRINTING</span>
+          </div>
         </Link>
-        <p className="text-white/25 text-xs mt-1">Admin Panel</p>
+        <p className="text-white/25 text-xs mt-2 pl-0.5">Admin Panel</p>
       </div>
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
         {NAV.map((item, i) => <NavItem key={item.to || `div-${i}`} item={item} onClick={onLinkClick} />)}
@@ -155,7 +173,14 @@ export default function AdminLayout({ children }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           </button>
-          <span className="font-display font-bold text-sm tracking-widest text-white">INKIFY ADMIN</span>
+          <Link to="/" className="flex items-center gap-2" aria-label="Home">
+            <img
+              src="/logo.jpg"
+              alt="Inkify Printing"
+              style={{ height: 28, width: 28, borderRadius: 6, objectFit: 'cover', objectPosition: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.5)' }}
+            />
+            <span className="font-display font-bold text-sm tracking-widest text-white" style={{ letterSpacing: '0.12em' }}>INKIFY</span>
+          </Link>
           <div className="w-9" />
         </div>
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">

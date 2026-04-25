@@ -43,6 +43,29 @@ const uploadDesign  = createUploader('designs');   // user design uploads
 const uploadProduct = createUploader('products');  // admin product mockups
 const uploadHero    = createUploader('hero');       // admin homepage images
 
+// ── Payment proof uploader (any image, 5 MB) ─────────────────
+const uploadPaymentProof = createUploader('payment-proofs');
+
+// ── Shirt mockup uploader (PNG-only, preserves transparency) ──
+const uploadMockup = (() => {
+  const storage = new CloudinaryStorage({
+    cloudinary,
+    params: async () => ({
+      folder:          'inkify/shirt-mockups',
+      allowed_formats: ['png'],
+      public_id:       `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    }),
+  });
+  return multer({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype === 'image/png') cb(null, true);
+      else cb(new Error('Only PNG files are accepted for mockups — required for transparent background.'));
+    },
+  });
+})();
+
 // ── Delete a cloudinary asset by URL ──────────────────────────
 const deleteByUrl = async (url) => {
   if (!url) return;
@@ -59,4 +82,4 @@ const deleteByUrl = async (url) => {
   }
 };
 
-module.exports = { cloudinary, uploadDesign, uploadProduct, uploadHero, deleteByUrl };
+module.exports = { cloudinary, uploadDesign, uploadProduct, uploadHero, uploadMockup, uploadPaymentProof, deleteByUrl };

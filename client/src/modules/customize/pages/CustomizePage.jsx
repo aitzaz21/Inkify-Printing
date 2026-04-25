@@ -159,6 +159,15 @@ export default function CustomizePage() {
   const [designNote,     setDesignNote]     = useState('');
   const [showSizeGuide,  setShowSizeGuide]  = useState(false);
 
+  // Mockup URL lookup: find admin-uploaded image for current shirt type + color + side
+  const activeMockupUrl = (() => {
+    if (!config) return null;
+    const shirtType = config.shirtTypes?.find(t => t.id === typeId);
+    const mockup    = shirtType?.mockups?.find(m => m.hex.toLowerCase() === color.hex.toLowerCase());
+    if (!mockup) return null;
+    return activeSide === 'front' ? (mockup.frontUrl || null) : (mockup.backUrl || null);
+  })();
+
   // Active side helpers
   const activeSideState    = activeSide === 'front' ? front : back;
   const setActiveSideState = activeSide === 'front' ? setFront : setBack;
@@ -387,6 +396,7 @@ export default function CustomizePage() {
                   : null
                 }
                 showPrintArea={step === 2}
+                mockupUrl={activeMockupUrl}
               />
 
               {/* Context hint */}
