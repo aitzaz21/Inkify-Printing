@@ -7,31 +7,7 @@ import { uploadAPI } from '../../../shared/api/upload.service';
 import { designAPI } from '../../marketplace/services/design.service';
 import { useCart } from '../../../shared/context/CartContext';
 import { Spinner } from '../../../shared/components/Spinner';
-import { SHIRT_TYPE_IDS, SHIRT_TYPE_META } from '../utils/shirtTypes';
 import { ShirtViewer2D } from '../components/ShirtViewer2D';
-
-// ── Shirt SVG thumbnails (for selector) ──────────────────────────────────────
-const SHIRT_SVG = {
-  [SHIRT_TYPE_IDS.PLAIN_TSHIRT]: (
-    <svg viewBox="0 0 100 110" fill="currentColor" className="w-full h-full">
-      <path d="M38 10 L22 26 L8 20 L13 50 L24 50 L24 100 L76 100 L76 50 L87 50 L92 20 L78 26 L62 10 C59 18 41 18 38 10Z" />
-    </svg>
-  ),
-  [SHIRT_TYPE_IDS.POLO]: (
-    <svg viewBox="0 0 100 110" fill="currentColor" className="w-full h-full">
-      <path d="M38 10 L22 26 L8 20 L13 50 L24 50 L24 100 L76 100 L76 50 L87 50 L92 20 L78 26 L62 10 C60 6 55 5 50 12 C45 5 40 6 38 10Z" />
-      <rect x="47" y="12" width="6" height="24" rx="2" fill="rgba(0,0,0,0.18)" />
-      <circle cx="50" cy="17" r="1.5" fill="rgba(0,0,0,0.28)" />
-      <circle cx="50" cy="23" r="1.5" fill="rgba(0,0,0,0.28)" />
-      <circle cx="50" cy="29" r="1.5" fill="rgba(0,0,0,0.28)" />
-    </svg>
-  ),
-  [SHIRT_TYPE_IDS.VNECK]: (
-    <svg viewBox="0 0 100 110" fill="currentColor" className="w-full h-full">
-      <path d="M38 10 L22 26 L8 20 L13 50 L24 50 L24 100 L76 100 L76 50 L87 50 L92 20 L78 26 L62 10 L50 46 Z" />
-    </svg>
-  ),
-};
 
 // Quick placement positions within print area (0-1)
 const QUICK_POSITIONS = [
@@ -129,13 +105,17 @@ export default function CustomizePage() {
   const [step,       setStep]       = useState(1);
   const [maxReached, setMaxReached] = useState(1);
 
-  // Config
+  // Config (sizes + pricing only)
   const [config,  setConfig]  = useState(null);
   const [cfgLoad, setCfgLoad] = useState(true);
 
-  // Shirt options
-  const [typeId, setTypeId] = useState(SHIRT_TYPE_IDS.PLAIN_TSHIRT);
-  const [color,  setColor]  = useState({ name: 'White', hex: '#FFFFFF' });
+  // Dynamic shirt types from admin
+  const [shirtTypes, setShirtTypes] = useState([]);
+  const [stLoad,     setStLoad]     = useState(true);
+
+  // Shirt options — typeId is now the MongoDB _id of the selected ShirtType
+  const [typeId, setTypeId] = useState(null);
+  const [color,  setColor]  = useState(null); // { _id, colorName, hex, imageUrl }
   const [size,   setSize]   = useState('M');
   const [qty,    setQty]    = useState(1);
 
@@ -159,14 +139,11 @@ export default function CustomizePage() {
   const [designNote,     setDesignNote]     = useState('');
   const [showSizeGuide,  setShowSizeGuide]  = useState(false);
 
-  // Mockup URL lookup: find admin-uploaded image for current shirt type + color + side
-  const activeMockupUrl = (() => {
-    if (!config) return null;
-    const shirtType = config.shirtTypes?.find(t => t.id === typeId);
-    const mockup    = shirtType?.mockups?.find(m => m.hex.toLowerCase() === color.hex.toLowerCase());
-    if (!mockup) return null;
-    return activeSide === 'front' ? (mockup.frontUrl || null) : (mockup.backUrl || null);
-  })();
+  // Active shirt type object
+  const activeShirtType = shirtTypes.find(t => t._id === typeId) || null;
+
+  // Mockup URL: the image the admin uploaded for the selected shirt type + colour
+  const activeMockupUrl = color?.imageUrl || null;
 
   // Active side helpers
   const activeSideState    = activeSide === 'front' ? front : back;
@@ -176,19 +153,31 @@ export default function CustomizePage() {
     ? null
     : (activeSideState.localPreview || activeSideState.url || null);
 
-  // ── Config load ──────────────────────────────────────────────────────────
+  // ── Config load (sizes + pricing) ────────────────────────────────────────
   useEffect(() => {
     api.get('/shirt-config')
       .then(r => {
         const cfg = r.data.config;
         setConfig(cfg);
-        const first = cfg.shirtTypes?.find(t => t.enabled);
-        if (first) setTypeId(first.id);
-        if (cfg.colors?.length)  setColor(cfg.colors[0]);
         if (cfg.sizes?.length && !cfg.sizes.includes('M')) setSize(cfg.sizes[0]);
       })
       .catch(() => toast.error('Failed to load configuration.'))
       .finally(() => setCfgLoad(false));
+  }, []);
+
+  // ── Shirt types load ──────────────────────────────────────────────────────
+  useEffect(() => {
+    api.get('/shirt-types')
+      .then(r => {
+        const types = r.data.shirtTypes || [];
+        setShirtTypes(types);
+        if (types.length > 0) {
+          setTypeId(types[0]._id);
+          if (types[0].colors?.length) setColor(types[0].colors[0]);
+        }
+      })
+      .catch(() => toast.error('Failed to load shirt types.'))
+      .finally(() => setStLoad(false));
   }, []);
 
   // Pre-fill from marketplace navigation
@@ -286,15 +275,14 @@ export default function CustomizePage() {
 
   // ── Add to Cart ──────────────────────────────────────────────────────────
   const handleAddToCart = () => {
-    if (!config) return;
-    const typeMeta = SHIRT_TYPE_META[typeId];
+    if (!config || !activeShirtType || !color) return;
 
     addItem({
       productId:   'custom',
-      productName: `${typeMeta?.label || 'Custom Shirt'} (Custom)`,
-      shirtType:    typeMeta?.label || typeId,
+      productName: `${activeShirtType.name} (Custom)`,
+      shirtType:    activeShirtType.name,
       shirtTypeId:  typeId,
-      color:        color.name,
+      color:        color.colorName,
       colorHex:     color.hex,
       size,
       quantity:     qty,
@@ -327,7 +315,7 @@ export default function CustomizePage() {
   };
 
   // ── Loading / error states ───────────────────────────────────────────────
-  if (cfgLoad) return (
+  if (cfgLoad || stLoad) return (
     <div className="min-h-screen flex items-center justify-center">
       <Spinner size="lg" className="text-ink-brown" />
     </div>
@@ -340,8 +328,6 @@ export default function CustomizePage() {
       </div>
     </div>
   );
-
-  const enabledTypes = config.shirtTypes?.filter(t => t.enabled) || [];
   const hasAnyDesign = !!(front.url || back.url);
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -379,8 +365,8 @@ export default function CustomizePage() {
               }}
             >
               <ShirtViewer2D
-                typeId={typeId}
-                color={color.hex}
+                typeId="plain-tshirt"
+                color={color?.hex || '#FFFFFF'}
                 side={activeSide}
                 designImage={activeDesignImg}
                 designX={activeSideState.x}
@@ -461,8 +447,8 @@ export default function CustomizePage() {
 
             {/* Selection pills */}
             <div className="hidden lg:flex mt-3 gap-2 flex-wrap">
-              <Pill color={color.hex}>{color.name}</Pill>
-              <Pill>{SHIRT_TYPE_META[typeId]?.label || typeId}</Pill>
+              {color && <Pill color={color.hex}>{color.colorName}</Pill>}
+              {activeShirtType && <Pill>{activeShirtType.name}</Pill>}
               <Pill>Size {size}</Pill>
               {front.url && <Pill accent>Front design</Pill>}
               {back.url  && <Pill accent>Back design</Pill>}
@@ -483,36 +469,74 @@ export default function CustomizePage() {
                   {/* Shirt type */}
                   <Card>
                     <SectionLabel>Shirt Style</SectionLabel>
-                    {enabledTypes.length === 0 ? (
-                      <p className="text-white/30 text-sm">No shirt types available.</p>
+                    {shirtTypes.length === 0 ? (
+                      <div className="text-center py-6">
+                        <p className="text-white/30 text-sm">No shirt types configured yet.</p>
+                        <p className="text-white/20 text-xs mt-1">Ask the admin to add shirt types in the admin panel.</p>
+                      </div>
                     ) : (
-                      <div className="grid grid-cols-3 gap-3">
-                        {enabledTypes.map(t => {
-                          const meta = SHIRT_TYPE_META[t.id] || { label: t.name, description: '' };
-                          const sel  = typeId === t.id;
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {shirtTypes.map(t => {
+                          const sel        = typeId === t._id;
+                          const firstColor = t.colors?.[0];
                           return (
-                            <motion.button key={t.id} onClick={() => setTypeId(t.id)} whileTap={{ scale: 0.96 }}
-                              className="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all duration-200"
+                            <motion.button key={t._id}
+                              onClick={() => {
+                                setTypeId(t._id);
+                                if (t.colors?.length) setColor(t.colors[0]);
+                                else setColor(null);
+                              }}
+                              whileTap={{ scale: 0.96 }}
+                              className="flex flex-col items-center gap-2.5 p-3 rounded-2xl transition-all duration-200 text-left relative"
                               style={{
                                 border:     sel ? '2px solid rgba(107,66,38,0.9)' : '1.5px solid rgba(255,255,255,0.08)',
-                                background: sel ? 'rgba(107,66,38,0.18)' : 'rgba(255,255,255,0.02)',
+                                background: sel ? 'rgba(107,66,38,0.16)' : 'rgba(255,255,255,0.02)',
                               }}>
-                              <div className="w-14 h-18 flex items-center justify-center"
-                                style={{ color: sel ? '#C9967A' : 'rgba(255,255,255,0.25)', width: 56, height: 68 }}>
-                                {SHIRT_SVG[t.id]}
+                              {/* Thumbnail: first color's image or placeholder */}
+                              <div className="w-full rounded-xl overflow-hidden flex-shrink-0"
+                                style={{ aspectRatio: '3/4', background: 'linear-gradient(135deg,#111,#1a1a1a)' }}>
+                                {firstColor?.imageUrl ? (
+                                  <img src={firstColor.imageUrl} alt={t.name}
+                                    className="w-full h-full object-contain p-1"
+                                    style={{ filter: sel ? 'none' : 'grayscale(30%)' }} />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <svg viewBox="0 0 100 110" fill="currentColor" className="w-12 h-12"
+                                      style={{ color: sel ? 'rgba(201,150,122,0.5)' : 'rgba(255,255,255,0.1)' }}>
+                                      <path d="M38 10 L22 26 L8 20 L13 50 L24 50 L24 100 L76 100 L76 50 L87 50 L92 20 L78 26 L62 10 C59 18 41 18 38 10Z" />
+                                    </svg>
+                                  </div>
+                                )}
                               </div>
-                              <div className="text-center">
-                                <p className="text-xs font-semibold leading-tight"
-                                  style={{ color: sel ? '#fff' : 'rgba(255,255,255,0.5)' }}>
-                                  {meta.label}
+                              {/* Name + colour count */}
+                              <div className="w-full">
+                                <p className="text-xs font-semibold text-center leading-tight"
+                                  style={{ color: sel ? '#fff' : 'rgba(255,255,255,0.55)' }}>
+                                  {t.name}
                                 </p>
-                                <p className="text-[10px] mt-0.5 leading-tight"
-                                  style={{ color: sel ? 'rgba(201,150,122,0.8)' : 'rgba(255,255,255,0.25)' }}>
-                                  {meta.description}
-                                </p>
+                                {t.description && (
+                                  <p className="text-[10px] text-center mt-0.5 leading-tight"
+                                    style={{ color: sel ? 'rgba(201,150,122,0.75)' : 'rgba(255,255,255,0.22)' }}>
+                                    {t.description}
+                                  </p>
+                                )}
+                                {/* Colour swatches preview */}
+                                {t.colors?.length > 0 && (
+                                  <div className="flex justify-center gap-1 mt-2 flex-wrap">
+                                    {t.colors.slice(0,5).map(c => (
+                                      <div key={c._id} className="w-3 h-3 rounded-full border border-white/15"
+                                        style={{ background: c.hex }} />
+                                    ))}
+                                    {t.colors.length > 5 && (
+                                      <span className="text-[9px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                                        +{t.colors.length - 5}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                               {sel && (
-                                <div className="w-4 h-4 rounded-full flex items-center justify-center"
+                                <div className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center"
                                   style={{ background: 'linear-gradient(135deg,#6B4226,#8B5A3C)' }}>
                                   <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -526,27 +550,33 @@ export default function CustomizePage() {
                     )}
                   </Card>
 
-                  {/* Color */}
-                  {config.colors?.length > 0 && (
+                  {/* Colour — from selected shirt type's colour variants */}
+                  {activeShirtType && activeShirtType.colors?.length > 0 && (
                     <Card>
-                      <SectionLabel>Color</SectionLabel>
+                      <SectionLabel>Colour</SectionLabel>
                       <div className="flex flex-wrap gap-2.5 mb-3">
-                        {config.colors.map((c, i) => (
-                          <button key={i} onClick={() => setColor(c)} title={c.name}
-                            className="transition-all duration-150"
-                            style={{
-                              width: 36, height: 36, borderRadius: '50%', background: c.hex,
-                              border: color.name === c.name ? '3px solid #8B5A3C' : '2px solid rgba(255,255,255,0.12)',
-                              boxShadow: color.name === c.name ? '0 0 0 3px rgba(107,66,38,0.35)' : 'none',
-                              flexShrink: 0,
-                            }}
-                          />
-                        ))}
+                        {activeShirtType.colors.map(c => {
+                          const sel = color?._id === c._id;
+                          return (
+                            <button key={c._id} onClick={() => setColor(c)} title={c.colorName}
+                              className="transition-all duration-150"
+                              style={{
+                                width: 36, height: 36, borderRadius: '50%', background: c.hex,
+                                border: sel ? '3px solid #8B5A3C' : '2px solid rgba(255,255,255,0.12)',
+                                boxShadow: sel ? '0 0 0 3px rgba(107,66,38,0.35)' : 'none',
+                                flexShrink: 0,
+                              }}
+                            />
+                          );
+                        })}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: color.hex, border: '1px solid rgba(255,255,255,0.2)' }} />
-                        <p className="text-white text-sm font-medium">{color.name}</p>
-                      </div>
+                      {color && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full flex-shrink-0"
+                            style={{ background: color.hex, border: '1px solid rgba(255,255,255,0.2)' }} />
+                          <p className="text-white text-sm font-medium">{color.colorName}</p>
+                        </div>
+                      )}
                     </Card>
                   )}
 
@@ -916,11 +946,11 @@ export default function CustomizePage() {
                   <Card>
                     <SectionLabel>Order Summary</SectionLabel>
                     <div className="space-y-3">
-                      <SummaryRow label="Shirt" value={SHIRT_TYPE_META[typeId]?.label || typeId} />
+                      <SummaryRow label="Shirt" value={activeShirtType?.name || '—'} />
                       <SummaryRow label="Color">
                         <div className="flex items-center gap-2">
-                          <div className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ background: color.hex, border: '1px solid rgba(255,255,255,0.15)' }} />
-                          <span className="text-white text-sm">{color.name}</span>
+                          <div className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ background: color?.hex || '#fff', border: '1px solid rgba(255,255,255,0.15)' }} />
+                          <span className="text-white text-sm">{color?.colorName || '—'}</span>
                         </div>
                       </SummaryRow>
                       <SummaryRow label="Size" value={size} />
