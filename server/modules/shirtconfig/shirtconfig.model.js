@@ -7,16 +7,15 @@ const mockupSchema = new mongoose.Schema({
   backUrl:   { type: String, default: '' },
 }, { _id: true });
 
-// Singleton document — only one record ever exists.
+// shirtTypes are now fully dynamic — admin can add/remove any shirt type
+const shirtTypeSchema = new mongoose.Schema({
+  name:    { type: String, required: true, trim: true },
+  enabled: { type: Boolean, default: true },
+  mockups: { type: [mockupSchema], default: [] },
+}, { _id: true });
+
 const shirtConfigSchema = new mongoose.Schema({
-  shirtTypes: [
-    {
-      id:      { type: String, enum: ['plain-tshirt', 'polo', 'vneck'], required: true },
-      name:    { type: String, required: true, trim: true },
-      enabled: { type: Boolean, default: true },
-      mockups: { type: [mockupSchema], default: [] },
-    }
-  ],
+  shirtTypes: { type: [shirtTypeSchema], default: [] },
   colors: [
     {
       name: { type: String, required: true, trim: true },

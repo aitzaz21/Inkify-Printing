@@ -105,17 +105,13 @@ export default function CustomizePage() {
   const [step,       setStep]       = useState(1);
   const [maxReached, setMaxReached] = useState(1);
 
-  // Config (sizes + pricing only)
+  // Config (shirt types + sizes + pricing — all from one endpoint)
   const [config,  setConfig]  = useState(null);
   const [cfgLoad, setCfgLoad] = useState(true);
 
-  // Dynamic shirt types from admin
-  const [shirtTypes, setShirtTypes] = useState([]);
-  const [stLoad,     setStLoad]     = useState(true);
-
-  // Shirt options — typeId is now the MongoDB _id of the selected ShirtType
+  // Shirt options — typeId is the MongoDB _id of the selected shirtType subdoc
   const [typeId, setTypeId] = useState(null);
-  const [color,  setColor]  = useState(null); // { _id, colorName, hex, imageUrl }
+  const [color,  setColor]  = useState(null); // { _id, colorName, hex, frontUrl, backUrl }
   const [size,   setSize]   = useState('M');
   const [qty,    setQty]    = useState(1);
 
@@ -139,11 +135,14 @@ export default function CustomizePage() {
   const [designNote,     setDesignNote]     = useState('');
   const [showSizeGuide,  setShowSizeGuide]  = useState(false);
 
-  // Active shirt type object
-  const activeShirtType = shirtTypes.find(t => t._id === typeId) || null;
+  // Derived from config
+  const enabledTypes    = config?.shirtTypes?.filter(t => t.enabled) || [];
+  const activeShirtType = enabledTypes.find(t => t._id === typeId) || null;
 
-  // Mockup URL: the image the admin uploaded for the selected shirt type + colour
-  const activeMockupUrl = color?.imageUrl || null;
+  // Mockup URL: front or back image uploaded by admin for this shirt type + colour
+  const activeMockupUrl = color
+    ? (activeSide === 'front' ? (color.frontUrl || null) : (color.backUrl || null))
+    : null;
 
   // Active side helpers
   const activeSideState    = activeSide === 'front' ? front : back;
@@ -153,31 +152,22 @@ export default function CustomizePage() {
     ? null
     : (activeSideState.localPreview || activeSideState.url || null);
 
-  // ── Config load (sizes + pricing) ────────────────────────────────────────
+  // ── Config load ───────────────────────────────────────────────────────────
   useEffect(() => {
     api.get('/shirt-config')
       .then(r => {
         const cfg = r.data.config;
         setConfig(cfg);
+        // Set first enabled shirt type + its first colour variant
+        const first = cfg.shirtTypes?.find(t => t.enabled);
+        if (first) {
+          setTypeId(first._id);
+          if (first.mockups?.length) setColor(first.mockups[0]);
+        }
         if (cfg.sizes?.length && !cfg.sizes.includes('M')) setSize(cfg.sizes[0]);
       })
       .catch(() => toast.error('Failed to load configuration.'))
       .finally(() => setCfgLoad(false));
-  }, []);
-
-  // ── Shirt types load ──────────────────────────────────────────────────────
-  useEffect(() => {
-    api.get('/shirt-types')
-      .then(r => {
-        const types = r.data.shirtTypes || [];
-        setShirtTypes(types);
-        if (types.length > 0) {
-          setTypeId(types[0]._id);
-          if (types[0].colors?.length) setColor(types[0].colors[0]);
-        }
-      })
-      .catch(() => toast.error('Failed to load shirt types.'))
-      .finally(() => setStLoad(false));
   }, []);
 
   // Pre-fill from marketplace navigation
@@ -315,7 +305,7 @@ export default function CustomizePage() {
   };
 
   // ── Loading / error states ───────────────────────────────────────────────
-  if (cfgLoad || stLoad) return (
+  if (cfgLoad) return (
     <div className="min-h-screen flex items-center justify-center">
       <Spinner size="lg" className="text-ink-brown" />
     </div>
@@ -469,36 +459,35 @@ export default function CustomizePage() {
                   {/* Shirt type */}
                   <Card>
                     <SectionLabel>Shirt Style</SectionLabel>
-                    {shirtTypes.length === 0 ? (
+                    {enabledTypes.length === 0 ? (
                       <div className="text-center py-6">
                         <p className="text-white/30 text-sm">No shirt types configured yet.</p>
-                        <p className="text-white/20 text-xs mt-1">Ask the admin to add shirt types in the admin panel.</p>
+                        <p className="text-white/20 text-xs mt-1">Admin needs to add shirt types in Shirt Config.</p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {shirtTypes.map(t => {
-                          const sel        = typeId === t._id;
-                          const firstColor = t.colors?.[0];
+                        {enabledTypes.map(t => {
+                          const sel      = typeId === t._id;
+                          const firstMkp = t.mockups?.[0];
                           return (
                             <motion.button key={t._id}
                               onClick={() => {
                                 setTypeId(t._id);
-                                if (t.colors?.length) setColor(t.colors[0]);
-                                else setColor(null);
+                                setColor(t.mockups?.length ? t.mockups[0] : null);
                               }}
                               whileTap={{ scale: 0.96 }}
-                              className="flex flex-col items-center gap-2.5 p-3 rounded-2xl transition-all duration-200 text-left relative"
+                              className="flex flex-col items-center gap-2.5 p-3 rounded-2xl transition-all duration-200 relative"
                               style={{
                                 border:     sel ? '2px solid rgba(107,66,38,0.9)' : '1.5px solid rgba(255,255,255,0.08)',
                                 background: sel ? 'rgba(107,66,38,0.16)' : 'rgba(255,255,255,0.02)',
                               }}>
-                              {/* Thumbnail: first color's image or placeholder */}
-                              <div className="w-full rounded-xl overflow-hidden flex-shrink-0"
+                              {/* Shirt thumbnail */}
+                              <div className="w-full rounded-xl overflow-hidden"
                                 style={{ aspectRatio: '3/4', background: 'linear-gradient(135deg,#111,#1a1a1a)' }}>
-                                {firstColor?.imageUrl ? (
-                                  <img src={firstColor.imageUrl} alt={t.name}
+                                {firstMkp?.frontUrl ? (
+                                  <img src={firstMkp.frontUrl} alt={t.name}
                                     className="w-full h-full object-contain p-1"
-                                    style={{ filter: sel ? 'none' : 'grayscale(30%)' }} />
+                                    style={{ filter: sel ? 'none' : 'grayscale(25%)' }} />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
                                     <svg viewBox="0 0 100 110" fill="currentColor" className="w-12 h-12"
@@ -508,33 +497,25 @@ export default function CustomizePage() {
                                   </div>
                                 )}
                               </div>
-                              {/* Name + colour count */}
-                              <div className="w-full">
-                                <p className="text-xs font-semibold text-center leading-tight"
-                                  style={{ color: sel ? '#fff' : 'rgba(255,255,255,0.55)' }}>
-                                  {t.name}
-                                </p>
-                                {t.description && (
-                                  <p className="text-[10px] text-center mt-0.5 leading-tight"
-                                    style={{ color: sel ? 'rgba(201,150,122,0.75)' : 'rgba(255,255,255,0.22)' }}>
-                                    {t.description}
-                                  </p>
-                                )}
-                                {/* Colour swatches preview */}
-                                {t.colors?.length > 0 && (
-                                  <div className="flex justify-center gap-1 mt-2 flex-wrap">
-                                    {t.colors.slice(0,5).map(c => (
-                                      <div key={c._id} className="w-3 h-3 rounded-full border border-white/15"
-                                        style={{ background: c.hex }} />
-                                    ))}
-                                    {t.colors.length > 5 && (
-                                      <span className="text-[9px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
-                                        +{t.colors.length - 5}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
+                              {/* Name */}
+                              <p className="text-xs font-semibold text-center leading-tight w-full"
+                                style={{ color: sel ? '#fff' : 'rgba(255,255,255,0.55)' }}>
+                                {t.name}
+                              </p>
+                              {/* Colour swatch strip */}
+                              {t.mockups?.length > 0 && (
+                                <div className="flex justify-center gap-1 flex-wrap">
+                                  {t.mockups.slice(0,5).map(m => (
+                                    <div key={m._id} className="w-3 h-3 rounded-full border border-white/15"
+                                      style={{ background: m.hex }} />
+                                  ))}
+                                  {t.mockups.length > 5 && (
+                                    <span className="text-[9px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                                      +{t.mockups.length - 5}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                               {sel && (
                                 <div className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center"
                                   style={{ background: 'linear-gradient(135deg,#6B4226,#8B5A3C)' }}>
@@ -550,20 +531,20 @@ export default function CustomizePage() {
                     )}
                   </Card>
 
-                  {/* Colour — from selected shirt type's colour variants */}
-                  {activeShirtType && activeShirtType.colors?.length > 0 && (
+                  {/* Colour — from selected shirt type's mockup variants */}
+                  {activeShirtType?.mockups?.length > 0 && (
                     <Card>
                       <SectionLabel>Colour</SectionLabel>
                       <div className="flex flex-wrap gap-2.5 mb-3">
-                        {activeShirtType.colors.map(c => {
-                          const sel = color?._id === c._id;
+                        {activeShirtType.mockups.map(m => {
+                          const sel = color?._id === m._id;
                           return (
-                            <button key={c._id} onClick={() => setColor(c)} title={c.colorName}
+                            <button key={m._id} onClick={() => setColor(m)} title={m.colorName}
                               className="transition-all duration-150"
                               style={{
-                                width: 36, height: 36, borderRadius: '50%', background: c.hex,
-                                border: sel ? '3px solid #8B5A3C' : '2px solid rgba(255,255,255,0.12)',
-                                boxShadow: sel ? '0 0 0 3px rgba(107,66,38,0.35)' : 'none',
+                                width: 36, height: 36, borderRadius: '50%', background: m.hex,
+                                border:     sel ? '3px solid #8B5A3C' : '2px solid rgba(255,255,255,0.12)',
+                                boxShadow:  sel ? '0 0 0 3px rgba(107,66,38,0.35)' : 'none',
                                 flexShrink: 0,
                               }}
                             />

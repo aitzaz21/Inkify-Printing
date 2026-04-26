@@ -57,7 +57,6 @@ import AdminDesignersPage    from './modules/admin/pages/AdminDesignersPage';
 import AdminEarningsPage     from './modules/admin/pages/AdminEarningsPage';
 import AdminWithdrawalsPage  from './modules/admin/pages/AdminWithdrawalsPage';
 import AdminShirtConfigPage     from './modules/admin/pages/AdminShirtConfigPage';
-import AdminShirtTypesPage      from './modules/admin/pages/AdminShirtTypesPage';
 import AdminPaymentMethodsPage  from './modules/admin/pages/AdminPaymentMethodsPage';
 import AdminBlogPage        from './modules/admin/pages/AdminBlogPage';
 import AdminFAQPage         from './modules/admin/pages/AdminFAQPage';
@@ -172,7 +171,6 @@ function AppRoutes() {
       <Route path="/admin/designers"    element={<AdminOnly><AdminLayout><AdminDesignersPage /></AdminLayout></AdminOnly>} />
       <Route path="/admin/earnings"     element={<AdminOnly><AdminLayout><AdminEarningsPage /></AdminLayout></AdminOnly>} />
       <Route path="/admin/withdrawals"  element={<AdminOnly><AdminLayout><AdminWithdrawalsPage /></AdminLayout></AdminOnly>} />
-      <Route path="/admin/shirt-types"      element={<AdminOnly><AdminLayout><AdminShirtTypesPage /></AdminLayout></AdminOnly>} />
       <Route path="/admin/shirt-config"     element={<AdminOnly><AdminLayout><AdminShirtConfigPage /></AdminLayout></AdminOnly>} />
       <Route path="/admin/payment-methods" element={<AdminOnly><AdminLayout><AdminPaymentMethodsPage /></AdminLayout></AdminOnly>} />
       <Route path="/admin/blog"         element={<AdminOnly><AdminLayout><AdminBlogPage /></AdminLayout></AdminOnly>} />
