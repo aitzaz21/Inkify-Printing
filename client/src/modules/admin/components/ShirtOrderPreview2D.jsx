@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../../../shared/api/axios';
 import { ShirtViewer2D } from '../../customize/components/ShirtViewer2D';
 import { Spinner } from '../../../shared/components/Spinner';
+import { nameToShapeKey } from '../../customize/utils/shirtTypes';
 
 // ── Constants matching ShirtViewer2D exactly ──────────────────────────────────
 const PRINT_AREA = {
@@ -20,10 +21,7 @@ function loadImage(src) {
     img.crossOrigin = 'anonymous';
     img.onload  = () => resolve(img);
     img.onerror = reject;
-    // Add Cloudinary CORS param if needed
-    img.src = src.includes('res.cloudinary.com') && !src.includes('?')
-      ? src
-      : src;
+    img.src = src;
   });
 }
 
@@ -153,7 +151,7 @@ function SideViewer({ label, item, side, designUrl, designTransform, hasDesign, 
       <div className="rounded-2xl overflow-hidden"
         style={{ background: '#0e0e0e', border: '1px solid rgba(255,255,255,0.08)', aspectRatio: '3/4' }}>
         <ShirtViewer2D
-          typeId={item.shirtTypeId || 'plain-tshirt'}
+          typeId={nameToShapeKey(item.shirtType || item.productName)}
           color={item.colorHex || '#FFFFFF'}
           side={side}
           designImage={designUrl || null}

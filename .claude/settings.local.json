@@ -9,7 +9,19 @@
       "Bash(node -e \"const p = require\\('./node_modules/@react-three/drei/package.json'\\); console.log\\(p.version\\)\")",
       "WebFetch(domain:www.canva.com)",
       "Bash(xargs ls *)",
-      "Bash(xargs cat *)"
+      "Bash(xargs cat *)",
+      "Bash(node --check app.js)",
+      "Bash(node --check utils/emailService.js)",
+      "Bash(node --check utils/otpService.js)",
+      "Bash(node --check config/db.js)",
+      "Bash(node --check middleware/authMiddleware.js)",
+      "Bash(node --check middleware/adminMiddleware.js)",
+      "Bash(node --check modules/order/payfast.routes.js)",
+      "Bash(node --check modules/shirtconfig/shirtconfig.routes.js)",
+      "Bash(node --check modules/product/product.service.js)",
+      "Bash(node --check modules/auth/auth.validation.js)",
+      "Bash(node -e \"const v=require\\('./modules/auth/auth.validation'\\); console.log\\(Object.keys\\(v\\)\\);\")",
+      "Read(//d/inkify-v7-updated old/inkify-v7/server/**)"
     ]
   }
 }

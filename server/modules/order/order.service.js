@@ -11,6 +11,15 @@ const createOrder = async (userId, body) => {
     if (!manualPayment?.paymentMethodId) throw { status: 422, message: 'Please select a payment account.' };
   }
 
+  for (const i of items) {
+    if (!i.productName?.trim()) throw { status: 422, message: 'Each item must have a productName.' };
+    if (!i.color?.trim())       throw { status: 422, message: 'Each item must have a color.' };
+    if (!i.size?.trim())        throw { status: 422, message: 'Each item must have a size.' };
+    if (!i.quantity || i.quantity < 1) throw { status: 422, message: 'Quantity must be at least 1.' };
+    if (i.unitPrice == null || isNaN(i.unitPrice) || Number(i.unitPrice) < 0)
+      throw { status: 422, message: 'Each item must have a valid unitPrice.' };
+  }
+
   try {
     const User = require('../user/user.model');
     await User.findByIdAndUpdate(userId, { phone: shippingAddress.phone.trim() });
@@ -19,14 +28,6 @@ const createOrder = async (userId, body) => {
   const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
   const shipping = subtotal >= 5000 ? 0 : 300;
   const total    = subtotal + shipping;
-
-  for (const i of items) {
-    if (!i.productName?.trim()) throw { status: 422, message: 'Each item must have a productName.' };
-    if (!i.color?.trim())       throw { status: 422, message: 'Each item must have a color.' };
-    if (!i.size?.trim())        throw { status: 422, message: 'Each item must have a size.' };
-    if (!i.quantity || i.quantity < 1) throw { status: 422, message: 'Quantity must be at least 1.' };
-    if (i.unitPrice == null || isNaN(i.unitPrice)) throw { status: 422, message: 'Each item must have a unitPrice.' };
-  }
 
   const order = await Order.create({
     user: userId,

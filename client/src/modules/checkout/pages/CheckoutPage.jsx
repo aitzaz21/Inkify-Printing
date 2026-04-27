@@ -248,6 +248,13 @@ export default function CheckoutPage() {
           designId:        i.designId        || null,
           designNote:      i.designNote      || '',
           designTransform: i.designTransform || null,
+          // Front/back design fields
+          frontDesignUrl:       i.frontDesignUrl       || null,
+          frontDesignId:        i.frontDesignId        || null,
+          frontDesignTransform: i.frontDesignTransform || null,
+          backDesignUrl:        i.backDesignUrl        || null,
+          backDesignId:         i.backDesignId         || null,
+          backDesignTransform:  i.backDesignTransform  || null,
         })),
         shippingAddress: { ...form },
         paymentMethod: payMethod,

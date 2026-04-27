@@ -8,6 +8,7 @@ import { designAPI } from '../../marketplace/services/design.service';
 import { useCart } from '../../../shared/context/CartContext';
 import { Spinner } from '../../../shared/components/Spinner';
 import { ShirtViewer2D } from '../components/ShirtViewer2D';
+import { nameToShapeKey } from '../utils/shirtTypes';
 
 // Quick placement positions within print area (0-1)
 const QUICK_POSITIONS = [
@@ -355,7 +356,7 @@ export default function CustomizePage() {
               }}
             >
               <ShirtViewer2D
-                typeId="plain-tshirt"
+                typeId={nameToShapeKey(activeShirtType?.name)}
                 color={color?.hex || '#FFFFFF'}
                 side={activeSide}
                 designImage={activeDesignImg}
